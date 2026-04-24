@@ -1,0 +1,62 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+.env.*
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+*.so
+*.pyd
+*.dll
+*.dylib
+
+# CUDA / C++ extension byproducts
+training_code/src/build/
+training_code/src/*.egg-info/
+training_code/src/*.so
+training_code/src/*.o
+training_code/src/*.cu.o
+
+# Training outputs
+logs/
+training_code/logs/
+**/events.out.tfevents*
+**/checkpoint*.pth
+**/*.pth
+**/*.pt
+
+# Sim2sim / evaluation outputs
+sim2sim/drone_airsim/
+sim2sim/drone_genesis/depth_camera/**/exps*/
+sim2sim/drone_genesis/depth_camera/**/control_diag/
+sim2sim/drone_genesis/lidar_navrl/exps*/
+sim2sim/drone_genesis/hover_test_out/
+sim2sim/drone_genesis/**/*.mp4
+sim2sim/drone_genesis/**/*.gif
+sim2sim/drone_genesis/**/*.csv
+sim2sim/drone_genesis/**/*.json
+sim2sim/drone_genesis/**/*.jsonl
+
+# Local editor / OS files
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

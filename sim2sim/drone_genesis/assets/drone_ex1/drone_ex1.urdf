@@ -1,0 +1,136 @@
+<?xml version="1.0" ?>
+<robot name="drone_ex1">
+  <properties arm="0.08" kf="3.16e-10" km="7.94e-12" thrust2weight="2.25" max_speed_kmh="30" gnd_eff_coeff="11.36859" prop_radius="2.31348e-2" drag_coeff_xy="9.1785e-3" drag_coeff_z="10.311e-3" dw_coeff_1="276700.18" dw_coeff_2=".16" dw_coeff_3="-.11" />
+  <material name="blue">
+    <color rgba="0.2 0.2 0.2 1"/>
+  </material>
+  <material name="gray">
+    <color rgba="0.25 0.25 0.25 1"/>
+  </material>
+  <material name="dark_gray">
+    <color rgba="0.2 0.2 0.2 1"/>
+  </material>
+  <material name="pink">
+    <color rgba="1.0 0.2 0.8 1"/>
+  </material>
+  <material name="purple">
+    <color rgba="0.8 0.2 0.8 1"/>
+  </material>
+  <material name="red">
+    <color rgba="1.0 0.2 0.2 1"/>
+  </material>
+  <material name="orange">
+    <color rgba="1.0 0.5 0.0 1"/>
+  </material>
+  <material name="green">
+    <color rgba="0.2 0.8 0.2 1"/>
+  </material>
+
+  <link name="world"/>
+  <link name="base_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.3"/>
+      <inertia ixx="5.6e-4" ixy="0.0" ixz="0.0" iyy="5.6e-4" iyz="0.0" izz="8.6e-4"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="./body.obj" scale="2.015 2.015 2.015"/>
+      </geometry>
+      <material name="grey">
+        <color rgba=".5 .5 .5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size=".16 .16 .05"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="fixed_to_world" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+  <link name="prop0_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.08 -0.08 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.08 -0.08 0.0175"/>
+      <geometry>
+        <mesh filename="./propeller0.obj" scale="2.015 2.015 2.015"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop0_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop0_link"/>
+  </joint>
+  <link name="prop1_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.08 -0.08 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.08 -0.08 0.0175"/>
+      <geometry>
+        <mesh filename="./propeller1.obj" scale="2.015 2.015 2.015"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop1_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop1_link"/>
+  </joint>
+  <link name="prop2_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.08 0.08 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.08 0.08 0.0175"/>
+      <geometry>
+        <mesh filename="./propeller2.obj" scale="2.015 2.015 2.015"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop2_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop2_link"/>
+  </joint>
+  <link name="prop3_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.08 0.08 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.08 0.08 0.0175"/>
+      <geometry>
+        <mesh filename="./propeller3.obj" scale="2.015 2.015 2.015"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="prop3_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="prop3_link"/>
+  </joint>
+  <link name="center_of_mass_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <joint name="center_of_mass_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="center_of_mass_link"/>
+  </joint>
+</robot>

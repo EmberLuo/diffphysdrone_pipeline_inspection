@@ -1,0 +1,11 @@
+--gate
+--coef_collide 5.0
+--coef_obj_avoidance 2.0
+--batch_size 256
+--fov_x_half_tan 0.82
+--timesteps 180
+--lidar_range 4.0
+--lidar_hbeams 120
+--lidar_vbeams 6
+--lidar_vfov_min -10.0
+--lidar_vfov_max 20.0

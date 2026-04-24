@@ -1,0 +1,100 @@
+sim:
+  dt: 0.01
+  substeps: 2
+  max_steps: 4000
+  max_visualize_fps: 60
+  enable_collision: true
+
+scene:
+  background_color: [0.90, 0.90, 0.90]
+  plane_color: [0.72, 0.72, 0.72]
+  viewer_camera_pos: [3.0, 9.0, 5.0]
+  viewer_camera_lookat: [3.0, 0.0, 1.2]
+  viewer_camera_fov: 45
+  drone_colors:
+    - [0.90, 0.15, 0.15]
+    - [0.15, 0.75, 0.25]
+    - [0.15, 0.45, 0.90]
+    - [0.90, 0.65, 0.15]
+    - [0.70, 0.20, 0.85]
+    - [0.10, 0.75, 0.75]
+  enable_record_camera: true
+  record_camera:
+    res: [1280, 720]
+    pos: [3.0, 9.0, 5.0]
+    lookat: [3.0, 0.0, 1.2]
+    fov: 45
+
+depth_camera:
+  width: 48
+  height: 36
+  fov_horizontal: 79.0
+  link_idx_local: 0
+  pos_offset: [0.25, 0.0, -0.1]
+  euler_offset: [0.0, 10.0, 0.0]
+  min_range: 0.3
+  max_range: 24.0
+  no_hit_value: 24.0
+
+task:
+  default_env: swap
+  max_duration_sec: 30.0
+  reach_threshold: 0.3
+  target_sphere_scale: 0.05
+  target_color: [0.20, 0.40, 0.90]
+  start_noise:
+    xy: 0.10
+    z: 0.25
+  layouts:
+    swap:
+      agents:
+        - {name: drone_1, start: [0.0, -1.2, 1.0], goal: [6.0,  1.2, 1.0]}
+        - {name: drone_2, start: [0.0,  0.0, 1.0], goal: [6.0,  0.0, 1.0]}
+        - {name: drone_3, start: [0.0,  1.2, 1.0], goal: [6.0, -1.2, 1.0]}
+        - {name: drone_4, start: [6.0,  1.2, 1.0], goal: [0.0, -1.2, 1.0]}
+        - {name: drone_5, start: [6.0,  0.0, 1.0], goal: [0.0,  0.0, 1.0]}
+        - {name: drone_6, start: [6.0, -1.2, 1.0], goal: [0.0,  1.2, 1.0]}
+
+termination:
+  enable_height_termination: true
+  enable_attitude_termination: false
+  enable_bounds_termination: true
+  min_height: 0.0
+  max_roll_deg: 89.0
+  max_pitch_deg: 89.0
+  max_abs_x: 40.0
+  max_abs_y: 40.0
+  max_abs_z: 20.0
+  inter_drone_collision_dist: 0.28
+
+policy:
+  no_odom: false
+  margin: 0.15
+
+policy_eval:
+  control_hz: 15.0
+  ctl_error_std: 0.17
+
+obstacles:
+  enable_wall_holes: true
+  wall_color: [0.33, 0.33, 0.36]
+  wall_holes:
+    - {x: 3.0, y_center: 0.0, z_center: 1.3, thickness: 0.10, wall_span_y: 4.8, wall_span_z: 2.6, hole_span_y: 2.2, hole_span_z: 1.4}
+    # - {x: 4.2, y_center: 0.0, z_center: 1.3, thickness: 0.10, wall_span_y: 4.8, wall_span_z: 2.6, hole_span_y: 2.2, hole_span_z: 1.4}
+    # - {x: 5.4, y_center: 0.0, z_center: 1.3, thickness: 0.10, wall_span_y: 4.8, wall_span_z: 2.6, hole_span_y: 2.2, hole_span_z: 1.4}
+
+controller:
+  use_urdf_params: true
+  gravity: 9.80665
+  hover_throttle: 0.297
+  twr_max: 2.25
+  hover_rpm_trim: 1.0
+  rpm_min: 0.0
+  rpm_max: 0.0
+  attitude_mix_scale: 0.2
+  kp_angle: [2.0, 2.0, 2.0]
+  max_rate: [15.0, 15.0, 5.0]
+  pid:
+    roll:  {p: 0.20, i: 0.01, d: 0.001}
+    pitch: {p: 0.20, i: 0.01, d: 0.001}
+    yaw:   {p: 0.20, i: 0.01, d: 0.001}

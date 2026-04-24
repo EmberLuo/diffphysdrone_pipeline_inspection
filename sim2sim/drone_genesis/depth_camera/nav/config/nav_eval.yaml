@@ -1,0 +1,131 @@
+sim:
+  dt: 0.01
+  substeps: 2
+  max_steps: 4500
+  max_visualize_fps: 60
+  enable_collision: true
+
+scene:
+  background_color: [0.90, 0.90, 0.90]
+  plane_color: [0.72, 0.72, 0.72]
+  viewer_camera_pos: [0.0, 20.0, 10.0]
+  viewer_camera_lookat: [0.0, 0.0, 1.2]
+  viewer_camera_fov: 45
+  drone_colors:
+    - [0.90, 0.15, 0.15]
+    - [0.15, 0.75, 0.25]
+    - [0.15, 0.45, 0.90]
+    - [0.90, 0.65, 0.15]
+    - [0.70, 0.20, 0.85]
+    - [0.10, 0.75, 0.75]
+  enable_record_camera: true
+  record_camera:
+    res: [1280, 720]
+    pos: [0.0, 20.0, 10.0]
+    lookat: [0.0, 0.0, 1.2]
+    fov: 45
+
+depth_camera:
+  width: 48
+  height: 36
+  fov_horizontal: 79.0
+  link_idx_local: 0
+  pos_offset: [0.25, 0.0, -0.1]
+  euler_offset: [0.0, 10.0, 0.0]
+  min_range: 0.3
+  max_range: 24.0
+  no_hit_value: 24.0
+
+task:
+  default_num_drones: 6
+  max_num_drones: 16
+  max_duration_sec: 35.0
+  reach_threshold: 0.2
+  target_sphere_scale: 0.05
+  target_color: [0.20, 0.40, 0.90]
+  layout_sampling:
+    max_attempts: 2500
+    start_goal_clearance: 0.80
+    inter_agent_clearance: 0.80
+    start_z_range: [0.90, 1.30]
+    goal_z_range: [0.90, 1.30]
+
+termination:
+  enable_height_termination: true
+  enable_attitude_termination: false
+  enable_bounds_termination: true
+  min_height: 0.05
+  max_roll_deg: 89.0
+  max_pitch_deg: 89.0
+  max_abs_x: 60.0
+  max_abs_y: 30.0
+  max_abs_z: 20.0
+  inter_drone_collision_dist: 0.28
+
+policy:
+  no_odom: false
+  margin: 0.15
+
+policy_eval:
+  control_hz: 15.0
+  ctl_error_std: 0.17
+
+obstacles:
+  boundary_walls:
+    enable: true
+    thickness: 0.20
+    height: 8.00
+    x_margin: 0.00
+    color: [0.25, 0.25, 0.28]
+
+  static:
+    count_per_region: 24
+    middle_count: 24
+    fill_middle_when_dynamic_disabled: true
+    radius: 0.28
+    height: 2.60
+    inter_obstacle_spacing: 1.00
+    placement_max_attempts: 3000
+    obstacle_color: [0.33, 0.33, 0.36]
+    regions:
+      left:
+        x_range: [-15.0, -5.0]
+        y_range: [-5.0, 5.0]
+      right:
+        x_range: [5.0, 15.0]
+        y_range: [-5.0, 5.0]
+
+  dynamic:
+    enable: true
+    count: 4
+    size: [0.80, 0.80, 1.20]
+    z_range: [0.30, 3.00]
+    speed_range: [0.40, 1.20]
+    waypoint_count: 6
+    waypoint_reach: 0.25
+    placement_max_attempts: 2000
+    waypoint_max_attempts: 1200
+    static_clearance: 0.20
+    boundary_margin_xy: 0.20
+    obstacle_color: [0.85, 0.30, 0.25]
+    region:
+      x_range: [-5.0, 5.0]
+      y_range: [-5.0, 5.0]
+    collision:
+      drone_radius: 0.20
+
+controller:
+  use_urdf_params: true
+  gravity: 9.80665
+  hover_throttle: 0.297
+  twr_max: 2.25
+  hover_rpm_trim: 1.0
+  rpm_min: 0.0
+  rpm_max: 0.0
+  attitude_mix_scale: 0.2
+  kp_angle: [2.0, 2.0, 2.0]
+  max_rate: [15.0, 15.0, 5.0]
+  pid:
+    roll:  {p: 0.20, i: 0.01, d: 0.001}
+    pitch: {p: 0.20, i: 0.01, d: 0.001}
+    yaw:   {p: 0.20, i: 0.01, d: 0.001}
