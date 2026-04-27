@@ -41,16 +41,7 @@ training_code/logs/
 **/*.pt
 
 # Sim2sim / evaluation outputs
-sim2sim/drone_airsim/
-sim2sim/drone_genesis/depth_camera/**/exps*/
-sim2sim/drone_genesis/depth_camera/**/control_diag/
-sim2sim/drone_genesis/lidar_navrl/exps*/
-sim2sim/drone_genesis/hover_test_out/
-sim2sim/drone_genesis/**/*.mp4
-sim2sim/drone_genesis/**/*.gif
-sim2sim/drone_genesis/**/*.csv
-sim2sim/drone_genesis/**/*.json
-sim2sim/drone_genesis/**/*.jsonl
+sim2sim/
 
 # Local editor / OS files
 .vscode/
