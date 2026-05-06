@@ -12,11 +12,12 @@ from typing import Any, Callable
 
 from matplotlib import pyplot as plt
 import torch
-import torch.nn.functional as F
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+
+from training_code.training_tasks.common import robust_target_hover
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ def add_common_args(parser: argparse.ArgumentParser, default_log_root: str | Pat
     parser.add_argument("--experiment_name", default=None)
     parser.add_argument("--run_name", default="")
     parser.add_argument("--save_every", type=int, default=10000)
+    robust_target_hover.add_robust_target_hover_args(parser)
 
 
 def build_standard_env(env_cls: type, args: argparse.Namespace, device: torch.device, **extra_kwargs: Any) -> Any:
@@ -80,10 +82,6 @@ def build_standard_env(env_cls: type, args: argparse.Namespace, device: torch.de
     )
 
 
-def barrier(x: torch.Tensor, v_to_pt: torch.Tensor) -> torch.Tensor:
-    return (v_to_pt * (1 - x).relu().pow(2)).mean()
-
-
 def is_save_iter(i: int) -> bool:
     if i < 2000:
         return (i + 1) % 250 == 0
@@ -95,11 +93,23 @@ def _smooth_dict(queue: dict[str, list[float]], values: dict[str, torch.Tensor])
         queue[key].append(float(value))
 
 
+def _mean_metric_history(history: list[dict[str, torch.Tensor]]) -> dict[str, torch.Tensor]:
+    if not history:
+        return {}
+    result = {}
+    keys = sorted({key for metrics in history for key in metrics})
+    for key in keys:
+        values = [metrics[key].float().mean() for metrics in history if key in metrics]
+        if values:
+            result[key] = torch.stack(values).mean()
+    return result
+
+
 def _make_run_dir(args: argparse.Namespace, task: TrainingTask) -> Path:
     if not args.log_root:
         args.log_root = str(task.default_log_root)
 
-    experiment_name = args.experiment_name or ("single_agent" if args.single else "multi_agent")
+    experiment_name = args.experiment_name or default_experiment_name(args)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir_name = f"{timestamp}_{args.run_name}" if args.run_name else timestamp
     run_dir = Path(args.log_root) / experiment_name / run_dir_name
@@ -107,30 +117,44 @@ def _make_run_dir(args: argparse.Namespace, task: TrainingTask) -> Path:
     return run_dir
 
 
-def _local_frame(env: Any) -> tuple[torch.Tensor, torch.Tensor]:
-    fwd = env.R[:, :, 0].clone()
-    up = torch.zeros_like(fwd)
-    fwd[:, 2] = 0
-    up[:, 2] = 1
-    fwd = F.normalize(fwd, 2, -1)
-    R = torch.stack([fwd, torch.cross(up, fwd, dim=-1), up], -1)
-    local_v = torch.squeeze(env.v[:, None] @ R, 1)
-    return R, local_v
+def default_experiment_name(args: argparse.Namespace) -> str:
+    agent_mode = "single_agent" if args.single else "multi_agent"
+    odom_mode = "no_odom" if args.no_odom else "odom"
+    return f"{agent_mode}_{odom_mode}"
 
 
-def _state_from_env(env: Any, args: argparse.Namespace, target_v_raw: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    R, local_v = _local_frame(env)
-    target_v_norm = torch.norm(target_v_raw, 2, -1, keepdim=True)
-    target_v_unit = target_v_raw / target_v_norm
-    target_v = target_v_unit * torch.minimum(target_v_norm, env.max_speed)
-    state = [
-        torch.squeeze(target_v[:, None] @ R, 1),
-        env.R[:, 2],
-        env.margin[:, None],
-    ]
-    if not args.no_odom:
-        state.insert(0, local_v)
-    return torch.cat(state, -1), target_v, R
+def _target_hover_diagnostics(
+    args: argparse.Namespace,
+    env: Any,
+    p_history: torch.Tensor,
+    v_history: torch.Tensor,
+    safety_success: torch.Tensor,
+) -> dict[str, torch.Tensor]:
+    goal_radius = float(args.goal_radius)
+    target_goal = env.p_target.detach().to(device=p_history.device, dtype=p_history.dtype)
+    goal_error = torch.norm(p_history - target_goal[None], p=2, dim=-1)
+    final_goal_error = goal_error[-1]
+    min_goal_error = goal_error.amin(dim=0)
+
+    hover_start = int(p_history.shape[0] * (1.0 - float(args.hover_phase_ratio)))
+    hover_start = min(max(0, hover_start), max(0, p_history.shape[0] - 1))
+    hover_pos_error = torch.norm(p_history[hover_start:] - target_goal[None], p=2, dim=-1)
+    hover_vel_error = torch.norm(v_history[hover_start:], p=2, dim=-1)
+    hover_position_error_i = hover_pos_error.mean(0)
+    hover_velocity_error_i = hover_vel_error.mean(0)
+
+    goal_success = final_goal_error < goal_radius
+    hover_success = (hover_position_error_i < goal_radius) & (hover_velocity_error_i < 0.5)
+    return {
+        "goal/final_error": final_goal_error.mean(),
+        "goal/min_error": min_goal_error.mean(),
+        "hover/position_error": hover_pos_error.mean(),
+        "hover/velocity_error": hover_vel_error.mean(),
+        "success/safety": safety_success.float().mean(),
+        "success/goal": goal_success.float().mean(),
+        "success/hover": hover_success.float().mean(),
+    }
+
 
 
 def _log_figures(
@@ -202,13 +226,21 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
     ctl_dt = 1 / 15
     B = args.batch_size
     sample_idx = min(4, B - 1)
+    rth_enabled = robust_target_hover.is_enabled(args)
+    robust_env_enabled = robust_target_hover.is_environment_enabled(args)
     pbar = tqdm(range(args.num_iters), ncols=80)
     try:
         for i in pbar:
             env.reset()
+            if robust_env_enabled:
+                robust_target_hover.reset(env, args)
+            dob_state = robust_target_hover.init_dob_state(env, args)
             model.reset()
             p_history = []
             v_history = []
+            a_history = []
+            wind_history = []
+            dob_metric_history = []
             target_v_history = []
             vec_to_pt_history = []
             v_preds = []
@@ -238,6 +270,8 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
 
             for t in range(args.timesteps):
                 ctl_dt = normalvariate(1 / 15, 0.1 / 15)
+                if robust_env_enabled:
+                    robust_target_hover.maybe_update_wind(env, args, t)
                 obs = task.make_observation(env, args, ctl_dt)
                 p_history.append(env.p)
                 vec_to_pt_history.append(env.find_vec_to_nearest_pt())
@@ -246,69 +280,89 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
                     target_v_raw = torch.squeeze(target_v_raw[:, None] @ R_drift, 1)
                 else:
                     target_v_raw = env.p_target - env.p.detach()
-                env.run(act_buffer[t], ctl_dt, target_v_raw)
+                v_before = env.v.detach().clone()
+                act_applied = act_buffer[t]
+                env.run(act_applied, ctl_dt, target_v_raw)
+                dob_state = robust_target_hover.update_dob_state(
+                    args=args,
+                    env=env,
+                    dob_state=dob_state,
+                    v_before=v_before,
+                    v_after=env.v.detach(),
+                    act_applied=act_applied.detach(),
+                    ctl_dt=ctl_dt,
+                )
 
-                state, target_v, R = _state_from_env(env, args, target_v_raw)
+                if rth_enabled:
+                    a_history.append(env.a)
+                    wind_history.append(env.v_wind)
+                if robust_env_enabled:
+                    state, target_v, R = robust_target_hover.state_from_env(env, args)
+                else:
+                    state, target_v, R = robust_target_hover.state_from_env(env, args, target_v_raw)
                 act, _, h = model(obs, state, h)
 
                 a_pred, v_pred, *_ = (R @ act.reshape(B, 3, -1)).unbind(-1)
                 v_preds.append(v_pred)
-                act = (a_pred - v_pred - env.g_std) * env.thr_est_error[:, None] + env.g_std
-                act_buffer.append(act)
+                act_base = (a_pred - v_pred - env.g_std) * env.thr_est_error[:, None] + env.g_std
+                act_cmd, dob_state, dob_metrics = robust_target_hover.apply_dob_hover_compensation(
+                    args=args,
+                    env=env,
+                    act_base=act_base,
+                    dob_state=dob_state,
+                    ctl_dt=ctl_dt,
+                )
+                if dob_metrics:
+                    dob_metric_history.append(dob_metrics)
+                act_buffer.append(act_cmd)
 
                 v_history.append(env.v)
                 target_v_history.append(target_v)
 
             p_history_t = torch.stack(p_history)
-            loss_ground_affinity = p_history_t[..., 2].relu().pow(2).mean()
             act_buffer_t = torch.stack(act_buffer)
-
             v_history_t = torch.stack(v_history)
-            v_history_cum = v_history_t.cumsum(0)
-            avg_window = min(30, max(1, v_history_t.shape[0] - 1))
-            v_history_avg = (v_history_cum[avg_window:] - v_history_cum[:-avg_window]) / avg_window
             target_v_history_t = torch.stack(target_v_history)
-            delta_v = torch.norm(v_history_avg - target_v_history_t[1 : 1 + v_history_avg.shape[0]], 2, -1)
-            loss_v = F.smooth_l1_loss(delta_v, torch.zeros_like(delta_v))
-
             v_preds_t = torch.stack(v_preds)
-            loss_v_pred = F.mse_loss(v_preds_t, v_history_t.detach())
-
-            target_v_history_norm = torch.norm(target_v_history_t, 2, -1)
-            target_v_history_normalized = target_v_history_t / target_v_history_norm[..., None]
-            fwd_v = torch.sum(v_history_t * target_v_history_normalized, -1)
-            loss_bias = F.mse_loss(v_history_t, fwd_v[..., None] * target_v_history_normalized) * 3
-
-            jerk_history = act_buffer_t.diff(1, 0).mul(15)
-            snap_history = F.normalize(act_buffer_t - env.g_std).diff(1, 0).diff(1, 0).mul(15**2)
-            loss_d_acc = act_buffer_t.pow(2).sum(-1).mean()
-            loss_d_jerk = jerk_history.pow(2).sum(-1).mean()
-            loss_d_snap = snap_history.pow(2).sum(-1).mean()
-
             vec_to_pt_history_t = torch.stack(vec_to_pt_history)
-            distance = torch.norm(vec_to_pt_history_t, 2, -1) - env.margin
-            with torch.no_grad():
-                v_to_pt = (-torch.diff(distance, 1, 1) * 135).clamp_min(1)
-            loss_obj_avoidance = barrier(distance[:, 1:], v_to_pt)
-            loss_collide = F.softplus(distance[:, 1:].mul(-32)).mul(v_to_pt).mean()
 
-            speed_history = v_history_t.norm(2, -1)
-            loss_speed = F.smooth_l1_loss(fwd_v, target_v_history_norm)
-
-            loss = (
-                args.coef_v * loss_v
-                + args.coef_obj_avoidance * loss_obj_avoidance
-                + args.coef_bias * loss_bias
-                + args.coef_d_acc * loss_d_acc
-                + args.coef_d_jerk * loss_d_jerk
-                + args.coef_d_snap * loss_d_snap
-                + args.coef_speed * loss_speed
-                + args.coef_v_pred * loss_v_pred
-                + args.coef_collide * loss_collide
-                + args.coef_ground_affinity
-                + loss_ground_affinity
-            )
-
+            if rth_enabled:
+                rth_loss = robust_target_hover.compute_loss(
+                    args,
+                    env,
+                    p_history=p_history_t,
+                    v_history=v_history_t,
+                    target_v_history=target_v_history_t,
+                    vec_to_pt_history=vec_to_pt_history_t,
+                    v_preds=v_preds_t,
+                    act_buffer=act_buffer_t,
+                    a_history=torch.stack(a_history),
+                    wind_history=torch.stack(wind_history),
+                )
+                loss = rth_loss.loss
+                distance = rth_loss.distance
+                speed_history = rth_loss.speed_history
+                log_metrics = rth_loss.metrics
+            else:
+                original_loss = robust_target_hover.compute_original_loss(
+                    args,
+                    env,
+                    p_history=p_history_t,
+                    v_history=v_history_t,
+                    target_v_history=target_v_history_t,
+                    vec_to_pt_history=vec_to_pt_history_t,
+                    v_preds=v_preds_t,
+                    act_buffer=act_buffer_t,
+                )
+                loss = original_loss.loss_per_trajectory.mean()
+                if float(args.coef_ground_affinity) != 0.0:
+                    loss = loss + float(args.coef_ground_affinity)
+                distance = original_loss.distance
+                speed_history = original_loss.speed_history
+                log_metrics = {
+                    "loss/total": loss.detach(),
+                    **{k: v.mean().detach() for k, v in original_loss.metrics.items()},
+                }
             if torch.isnan(loss):
                 print("loss is nan, exiting...")
                 raise SystemExit(1)
@@ -323,26 +377,20 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
                 avg_speed = speed_history.mean(0)
                 success = torch.all(distance.flatten(0, 1) > 0, 0)
                 success_rate = success.sum() / B
-                _smooth_dict(
-                    scalar_queue,
-                    {
-                        "loss": loss,
-                        "loss_v": loss_v,
-                        "loss_v_pred": loss_v_pred,
-                        "loss_obj_avoidance": loss_obj_avoidance,
-                        "loss_d_acc": loss_d_acc,
-                        "loss_d_jerk": loss_d_jerk,
-                        "loss_d_snap": loss_d_snap,
-                        "loss_bias": loss_bias,
-                        "loss_speed": loss_speed,
-                        "loss_collide": loss_collide,
-                        "loss_ground_affinity": loss_ground_affinity,
-                        "success": success_rate,
-                        "max_speed": speed_history.max(0).values.mean(),
-                        "avg_speed": avg_speed.mean(),
-                        "ar": (success * avg_speed).mean(),
-                    },
-                )
+                if not rth_enabled:
+                    log_metrics.update(
+                        {
+                            "performance/avg_speed": avg_speed.mean(),
+                            "performance/ar": (success * avg_speed).mean(),
+                        }
+                    )
+                    if robust_env_enabled:
+                        log_metrics.update(
+                            _target_hover_diagnostics(args, env, p_history_t, v_history_t, success)
+                        )
+                    log_metrics["success/main"] = success_rate
+                log_metrics.update(_mean_metric_history(dob_metric_history))
+                _smooth_dict(scalar_queue, log_metrics)
 
                 if is_save_iter(i):
                     _log_figures(writer, i + 1, sample_idx, p_history_t, v_history_t, act_buffer_t)

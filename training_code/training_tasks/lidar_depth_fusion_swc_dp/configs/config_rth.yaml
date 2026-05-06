@@ -1,0 +1,84 @@
+use_robust_target_hover: true
+use_robust_env: true
+
+batch_size: 128
+timesteps: 180
+single: true
+random_rotation: false
+yaw_drift: false
+ground_voxels: false
+scaffold: true
+speed_mtp: 0.7
+cam_angle: 20
+fov_x_half_tan: 0.82
+lidar_range: 4.0
+lidar_hbeams: 120
+lidar_vbeams: 6
+lidar_vfov_min: -10.0
+lidar_vfov_max: 20.0
+
+coef_v: 0.35
+coef_v_pred: 2.0
+coef_collide: 7.5
+coef_obj_avoidance: 3.0
+coef_d_acc: 0.01
+coef_d_jerk: 0.001
+coef_d_snap: 0.0
+coef_speed: 0.0
+coef_bias: 0.0
+lambda_original: 1.0
+
+use_wind: true
+wind_mode: mixed
+wind_mean_range: [-0.3, 0.3]
+wind_gust_range: [-1.0, 1.0]
+wind_vertical_range: [0.0, 0.45]
+wind_side_range: [0.4, 1.8]
+wind_update_interval: 8
+wind_randomize_prob: 0.85
+
+use_localization_noise: true
+pos_noise_std_range: [0.02, 0.18]
+vel_noise_std_range: [0.02, 0.12]
+sigma_p_range: [0.03, 0.25]
+
+goal_radius: 0.5
+
+use_dynamic_safety_margin: true
+lambda_corridor: 1.0
+base_safe_distance: 0.35
+safe_margin_extra: 0.1
+safe_margin_k_pos_uncertainty: 1.0
+safe_margin_k_wind: 0.05
+corridor_softplus_sigma: 0.2
+
+use_hover_loss: true
+lambda_hover: 0.75
+hover_phase_ratio: 0.35
+lambda_hover_pos: 1.0
+lambda_hover_vel: 0.6
+lambda_hover_acc: 0.02
+
+use_uncertainty_loss: true
+lambda_uncertainty: 0.25
+
+use_control_margin_loss: false
+lambda_margin: 0.0
+control_margin_rho: 0.8
+control_margin_eps: 0.5
+control_u_max: 15.0
+
+# High-altitude pipeline inspection has normal z > 0 flight; do not penalize altitude as ground affinity.
+use_ground_affinity_loss: false
+lambda_ground_affinity: 0.0
+
+use_cvar_loss: false
+lambda_cvar: 0.0
+cvar_top_ratio: 0.2
+
+use_dob_hover_observer: false
+use_dob_hover_compensation: false
+dob_log_only: true
+
+log_root: training_code/logs/lidar_depth_fusion_swc_dp
+run_name: rth_target_hover

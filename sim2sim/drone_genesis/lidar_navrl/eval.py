@@ -72,6 +72,7 @@ def _resolve_resume_path(resume_arg: str) -> Path:
 
     cand = [
         REPO_ROOT / resume_arg,
+        REPO_ROOT / "training_code" / "logs" / "lidar_navrl" / "single_agent_no_odom" / "20260422_125516" / resume_arg,
         REPO_ROOT / "training_code" / "logs" / "lidar_navrl" / "single_agent" / "20260422_125516" / resume_arg,
     ]
     for c in cand:
@@ -127,6 +128,10 @@ def parse_args():
     parser.add_argument("--gru_warmup_steps", type=int, default=10)
     parser.add_argument("--reach_threshold", type=float, default=1.5)
     parser.add_argument("--output_root", type=str, default=str(THIS_DIR))
+    parser.add_argument("--draw_lidar_points", action="store_true", default=False)
+    parser.add_argument("--lidar_draw_stride", type=int, default=1)
+    parser.add_argument("--lidar_draw_radius", type=float, default=0.015)
+    parser.add_argument("--lidar_draw_max_points", type=int, default=720)
 
     parser.add_argument("--show_viewer", dest="show_viewer", action="store_true")
     parser.add_argument("--no_show_viewer", dest="show_viewer", action="store_false")
@@ -263,7 +268,20 @@ def run_episode(
         last_pos = env.base_pos.clone()
 
         if control_elapsed >= control_dt - 1e-9:
-            scan = env.get_lidar()  # (num_agents, 1, 120, 6) already normalized
+            scan = env.get_lidar()  # (num_agents, 1, 120, 6), matching training lidar range-difference input
+            if (
+                args.draw_lidar_points
+                and args.show_viewer
+                and (policy_updates % max(1, int(args.lidar_draw_stride)) == 0)
+            ):
+                env.scene.clear_debug_objects()
+                lidar_points = env.get_lidar_debug_points(max_points=int(args.lidar_draw_max_points))
+                if lidar_points.numel() > 0:
+                    env.scene.draw_debug_spheres(
+                        poss=lidar_points,
+                        radius=max(0.0, float(args.lidar_draw_radius)),
+                        color=(0.1, 0.9, 0.3, 0.7),
+                    )
             scan_viz = np.uint8(np.clip(scan.detach().cpu().numpy() / 4.0 * 255.0, 0, 255))
             lidar_recorder.add_image(scan_viz.reshape(-1, lidar_h))
 

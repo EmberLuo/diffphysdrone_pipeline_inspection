@@ -5,8 +5,9 @@ from pathlib import Path
 import genesis as gs
 import numpy as np
 import torch
+import torch.nn.functional as F
 import warp as wp
-from genesis.utils.geom import quat_to_xyz
+from genesis.utils.geom import quat_to_R, quat_to_xyz
 
 THIS_DIR = Path(__file__).resolve().parent
 DRONE_GENESIS_DIR = THIS_DIR.parent
@@ -82,6 +83,12 @@ class NavEnv:
 
         # --- Lidar config ---
         self.lidar_range = float(lidar_cfg.get("max_range", 4.0))
+        self.lidar_hbeams = int(lidar_cfg.get("horizontal_line_num", 120))
+        self.lidar_vbeams = int(lidar_cfg.get("vertical_line_num", 6))
+        self.lidar_vfov = (
+            float(lidar_cfg.get("vertical_fov_deg_min", -10.0)),
+            float(lidar_cfg.get("vertical_fov_deg_max", 20.0)),
+        )
         self.lidar_sensor_offset = torch.tensor(
             lidar_cfg.get("sensor_pos_offset", [0.0, 0.0, 0.03]),
             device=self.device, dtype=torch.float32,
@@ -178,7 +185,7 @@ class NavEnv:
         vertices, faces = self._build_lidar_mesh()
         self._lidar_wp_mesh, self._lidar_mesh_ids = self._create_warp_mesh(vertices, faces)
 
-        sensor_pos, sensor_quat = self._compute_lidar_sensor_pose()
+        sensor_pos, sensor_quat, _ = self._compute_lidar_sensor_pose()
         lidar_env_data = {
             "num_envs": self.num_agents,
             "sensor_pos_tensor": sensor_pos.contiguous(),
@@ -193,12 +200,12 @@ class NavEnv:
             dt=self.dt,
             max_range=float(lidar_cfg.get("max_range", 4.0)),
             update_frequency=float(lidar_cfg.get("update_frequency_hz", 15.0)),
-            horizontal_line_num=int(lidar_cfg.get("horizontal_line_num", 120)),
-            vertical_line_num=int(lidar_cfg.get("vertical_line_num", 6)),
+            horizontal_line_num=self.lidar_hbeams,
+            vertical_line_num=self.lidar_vbeams,
             horizontal_fov_deg_min=float(lidar_cfg.get("horizontal_fov_deg_min", -180)),
             horizontal_fov_deg_max=float(lidar_cfg.get("horizontal_fov_deg_max", 180)),
-            vertical_fov_deg_min=float(lidar_cfg.get("vertical_fov_deg_min", -10)),
-            vertical_fov_deg_max=float(lidar_cfg.get("vertical_fov_deg_max", 20)),
+            vertical_fov_deg_min=self.lidar_vfov[0],
+            vertical_fov_deg_max=self.lidar_vfov[1],
             return_pointcloud=False,
             pointcloud_in_world_frame=bool(lidar_cfg.get("pointcloud_in_world_frame", False)),
             enable_sensor_noise=bool(lidar_cfg.get("enable_sensor_noise", False)),
@@ -211,6 +218,12 @@ class NavEnv:
             num_sensors=1,
             device=self.wp_device,
         )
+        self._install_training_lidar_rays()
+        self._last_lidar_scan = None
+        self._last_lidar_dist = None
+        self._last_lidar_points_local = None
+        self._last_lidar_sensor_pos = None
+        self._last_lidar_sensor_rot = None
 
     # --- Mesh construction helpers (from drones_nav_genesis) ---
     @staticmethod
@@ -302,24 +315,112 @@ class NavEnv:
             return torch.stack([genesis_quat[1], genesis_quat[2], genesis_quat[3], genesis_quat[0]])
         return torch.stack([genesis_quat[:, 1], genesis_quat[:, 2], genesis_quat[:, 3], genesis_quat[:, 0]], dim=1)
 
-    def _compute_lidar_sensor_pose(self):
-        from genesis.utils.geom import quat_to_R
+    def _install_training_lidar_rays(self):
+        h = torch.arange(self.lidar_hbeams, device=self.device, dtype=torch.float32)
+        v = torch.arange(self.lidar_vbeams, device=self.device, dtype=torch.float32)
+        az = 2.0 * math.pi * h / float(self.lidar_hbeams)
+        if self.lidar_vbeams <= 1:
+            elev = torch.zeros_like(v)
+        else:
+            elev = math.pi / 180.0 * (
+                self.lidar_vfov[0]
+                + (self.lidar_vfov[1] - self.lidar_vfov[0]) * v / float(self.lidar_vbeams - 1)
+            )
+        elev_grid, az_grid = torch.meshgrid(elev, az, indexing="ij")
+        ray_vectors = torch.stack(
+            [
+                torch.cos(elev_grid) * torch.cos(az_grid),
+                torch.cos(elev_grid) * torch.sin(az_grid),
+                torch.sin(elev_grid),
+            ],
+            dim=-1,
+        ).contiguous()
+        self.lidar_sensor.ray_vectors = wp.from_torch(ray_vectors, dtype=wp.vec3)
+        self.lidar_sensor.graph = None
+
+    def _lidar_yaw_only_rot(self):
         base_rot = quat_to_R(self.base_quat)
+        fwd = base_rot[:, :, 0].clone()
+        fwd[:, 2] = 0.0
+        fwd = F.normalize(fwd, p=2, dim=-1, eps=1e-6)
+        up = torch.zeros_like(fwd)
+        up[:, 2] = 1.0
+        left = torch.cross(up, fwd, dim=-1)
+        return torch.stack([fwd, left, up], dim=-1)
+
+    @staticmethod
+    def _yaw_only_warp_quat(yaw_rot: torch.Tensor) -> torch.Tensor:
+        yaw = torch.atan2(yaw_rot[:, 1, 0], yaw_rot[:, 0, 0])
+        half = 0.5 * yaw
+        quat = torch.zeros((yaw.shape[0], 4), device=yaw.device, dtype=torch.float32)
+        quat[:, 2] = torch.sin(half)
+        quat[:, 3] = torch.cos(half)
+        return quat
+
+    def _compute_lidar_sensor_pose(self):
+        base_rot = self._lidar_yaw_only_rot()
         sensor_offset = self.lidar_sensor_offset.view(1, 3, 1).expand(self.num_agents, -1, -1)
         sensor_pos = self.base_pos + torch.bmm(base_rot, sensor_offset).squeeze(-1)
-        sensor_quat = self._quat_genesis_to_warp(self.base_quat)
-        return sensor_pos, sensor_quat
+        sensor_quat = self._yaw_only_warp_quat(base_rot)
+        return sensor_pos, sensor_quat, base_rot
 
     def get_lidar(self) -> torch.Tensor:
-        sensor_pos, sensor_quat = self._compute_lidar_sensor_pose()
+        sensor_pos, sensor_quat, sensor_rot = self._compute_lidar_sensor_pose()
         self.lidar_sensor.lidar_positions_tensor[:] = sensor_pos
         self.lidar_sensor.lidar_quat_tensor[:] = sensor_quat
-        _, distances = self.lidar_sensor.update()
+        points_local, distances = self.lidar_sensor.update()
         dist = distances[:, 0, :, :]
         scan = self.lidar_range - dist.clamp(0.0, self.lidar_range)
         scan = scan.clamp(0.0, self.lidar_range)
         scan = scan.permute(0, 2, 1).unsqueeze(1)
+        self._last_lidar_scan = scan
+        self._last_lidar_dist = dist
+        self._last_lidar_points_local = points_local[:, 0, :, :, :]
+        self._last_lidar_sensor_pos = sensor_pos
+        self._last_lidar_sensor_rot = sensor_rot
         return scan
+
+    def get_lidar_debug_points(
+        self,
+        max_points: int = 720,
+        min_dist: float = 0.1,
+        agent_idx: int | None = None,
+    ) -> torch.Tensor:
+        if (
+            self._last_lidar_dist is None
+            or self._last_lidar_points_local is None
+            or self._last_lidar_sensor_pos is None
+            or self._last_lidar_sensor_rot is None
+        ):
+            return torch.zeros((0, 3), device=self.device, dtype=torch.float32)
+
+        if agent_idx is None:
+            agent_indices = range(self.num_agents)
+        else:
+            if agent_idx < 0 or agent_idx >= self.num_agents:
+                raise IndexError(f"agent_idx must be in [0, {self.num_agents}), got {agent_idx}")
+            agent_indices = [agent_idx]
+
+        points_world = []
+        for i in agent_indices:
+            dist = self._last_lidar_dist[i]
+            valid = (dist > float(min_dist)) & (dist < self.lidar_range)
+            if not bool(valid.any().item()):
+                continue
+            points_local = self._last_lidar_points_local[i][valid]
+            points_world.append(
+                points_local @ self._last_lidar_sensor_rot[i].T + self._last_lidar_sensor_pos[i]
+            )
+
+        if not points_world:
+            return torch.zeros((0, 3), device=self.device, dtype=torch.float32)
+
+        points = torch.cat(points_world, dim=0)
+        max_points = int(max_points)
+        if max_points > 0 and points.shape[0] > max_points:
+            sample_idx = torch.randperm(points.shape[0], device=points.device)[:max_points]
+            points = points[sample_idx]
+        return points
 
     def _add_obstacles(self):
         cyl_cfg = self.cfg.get("obstacles", {}).get("static_cylinders", {})

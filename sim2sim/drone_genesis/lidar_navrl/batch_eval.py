@@ -20,7 +20,7 @@ def main():
     parser.add_argument("--seed_start", type=int, default=0)
     parser.add_argument("--target_speed", type=float, default=0.5)
     parser.add_argument("--resume", type=str,
-                        default="training_code/logs/lidar_navrl/single_agent/20260422_125516/checkpoint0004.pth")
+                        default="training_code/logs/lidar_navrl/single_agent_no_odom/20260422_125516/checkpoint0004.pth")
     parser.add_argument("--config", type=str, default=str(THIS_DIR / "config" / "nav_eval.yaml"))
     parser.add_argument("--output_root", type=str, default=str(THIS_DIR))
     parser.add_argument("--show_viewer", action="store_true", default=False)
