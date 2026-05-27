@@ -1,0 +1,30 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="net_weight" default="$(arg repo_root)/training_code/logs/depth_camera/single_agent_odom/20260504_122043_dob_hover_dp_depth_odom/checkpoint0004.pth"/>
+  <arg name="depth_topic" default="/e2e/depth/image_raw"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="target_topic" default="/e2e/local_target"/>
+  <arg name="target_speed" default="1.0"/>
+  <arg name="no_odom" default="false"/>
+  <arg name="hover_percent" default="0.25"/>
+  <arg name="max_hover_percent" default="0.65"/>
+  <arg name="geofence_enabled" default="true"/>
+  <arg name="gate_on_px4_state" default="true"/>
+  <arg name="debug" default="false"/>
+
+  <node pkg="e2e_px4_controller" type="e2e_px4_controller.py" name="e2e_px4_controller" output="screen">
+    <env name="REPO_ROOT" value="$(arg repo_root)"/>
+    <env name="PYTHONPATH" value="$(arg repo_root):$(optenv PYTHONPATH)"/>
+    <param name="net_weight" value="$(arg net_weight)"/>
+    <param name="depth_topic" value="$(arg depth_topic)"/>
+    <param name="odom_topic" value="$(arg odom_topic)"/>
+    <param name="target_topic" value="$(arg target_topic)"/>
+    <param name="target_speed" value="$(arg target_speed)" type="double"/>
+    <param name="no_odom" value="$(arg no_odom)" type="bool"/>
+    <param name="hover_percent" value="$(arg hover_percent)" type="double"/>
+    <param name="max_hover_percent" value="$(arg max_hover_percent)" type="double"/>
+    <param name="geofence_enabled" value="$(arg geofence_enabled)" type="bool"/>
+    <param name="gate_on_px4_state" value="$(arg gate_on_px4_state)" type="bool"/>
+    <param name="debug" value="$(arg debug)" type="bool"/>
+  </node>
+</launch>

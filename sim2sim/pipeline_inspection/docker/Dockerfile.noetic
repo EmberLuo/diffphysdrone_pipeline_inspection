@@ -1,0 +1,20 @@
+FROM ros1_noetic:lidar_v1
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-rosdep \
+    ros-noetic-mavros \
+    ros-noetic-mavros-msgs \
+    ros-noetic-tf2-geometry-msgs \
+    ros-noetic-pcl-ros \
+    ros-noetic-pcl-conversions \
+    geographiclib-tools \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
+
+RUN geographiclib-get-geoids egm96-5 || true
+
+WORKDIR /workspace

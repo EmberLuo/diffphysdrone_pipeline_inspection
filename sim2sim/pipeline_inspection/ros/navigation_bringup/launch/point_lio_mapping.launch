@@ -1,0 +1,47 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="world" default="$(arg repo_root)/sim/worlds/powerplant_local.world"/>
+  <arg name="start_px4" default="true"/>
+  <arg name="vehicle" default="iris"/>
+  <arg name="sdf" default="$(arg repo_root)/sim/models/iris_mid360/iris_mid360.sdf"/>
+  <arg name="gui" default="false"/>
+  <arg name="start_livox_bridge" default="true"/>
+  <arg name="rviz" default="false"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="cloud_topic" default="/cloud_registered"/>
+  <arg name="livox_input_topic" default="/livox/lidar2"/>
+  <arg name="livox_custom_topic" default="/livox/lidar"/>
+  <arg name="livox_input_type" default="pointcloud2"/>
+  <arg name="scan_period" default="0.1"/>
+  <arg name="use_imu_as_input" default="false"/>
+
+  <group if="$(arg start_px4)">
+    <include file="$(find px4)/launch/mavros_posix_sitl.launch">
+      <arg name="enable_mavros" value="true"/>
+      <arg name="vehicle" value="$(arg vehicle)"/>
+      <arg name="sdf" value="$(arg sdf)"/>
+      <arg name="world" value="$(arg world)"/>
+      <arg name="gui" value="$(arg gui)"/>
+    </include>
+  </group>
+
+  <node if="$(arg start_livox_bridge)"
+        pkg="navigation_bringup"
+        type="pointcloud2livox_wrapper.py"
+        name="pointcloud2livox"
+        output="screen">
+    <param name="input_topic" value="$(arg livox_input_topic)"/>
+    <param name="output_topic" value="$(arg livox_custom_topic)"/>
+    <param name="input_type" value="$(arg livox_input_type)"/>
+    <param name="frame_id" value="livox"/>
+    <param name="lidar_id" value="1"/>
+    <param name="scan_period" value="$(arg scan_period)"/>
+  </node>
+
+  <include file="$(find point_lio)/launch/mapping_mid360.launch">
+    <arg name="rviz" value="$(arg rviz)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="cloud_topic" value="$(arg cloud_topic)"/>
+    <arg name="use_imu_as_input" value="$(arg use_imu_as_input)"/>
+  </include>
+</launch>

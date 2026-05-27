@@ -1,0 +1,42 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="world" default="$(arg repo_root)/sim/worlds/powerplant_local.world"/>
+  <arg name="map_path" default="$(arg repo_root)/assets/maps/powerplant_local.pcd"/>
+  <arg name="start_px4" default="true"/>
+  <arg name="vehicle" default="iris"/>
+  <arg name="sdf" default="$(arg repo_root)/sim/models/iris_mid360/iris_mid360.sdf"/>
+  <arg name="gui" default="false"/>
+  <arg name="lidar_topic" default="/livox/lidar2"/>
+  <arg name="lidar_input_type" default="pointcloud2"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="cloud_topic" default="/cloud_registered"/>
+  <arg name="publish_to_px4" default="true"/>
+  <arg name="initial_x" default="0.0"/>
+  <arg name="initial_y" default="0.0"/>
+  <arg name="initial_z" default="0.0"/>
+  <arg name="initial_yaw" default="0.0"/>
+
+  <group if="$(arg start_px4)">
+    <include file="$(find px4)/launch/mavros_posix_sitl.launch">
+      <arg name="enable_mavros" value="true"/>
+      <arg name="vehicle" value="$(arg vehicle)"/>
+      <arg name="sdf" value="$(arg sdf)"/>
+      <arg name="world" value="$(arg world)"/>
+      <arg name="gui" value="$(arg gui)"/>
+    </include>
+  </group>
+
+  <include file="$(find navigation_bringup)/launch/localization.launch">
+    <arg name="repo_root" value="$(arg repo_root)"/>
+    <arg name="map_path" value="$(arg map_path)"/>
+    <arg name="lidar_topic" value="$(arg lidar_topic)"/>
+    <arg name="input_type" value="$(arg lidar_input_type)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="cloud_topic" value="$(arg cloud_topic)"/>
+    <arg name="publish_to_px4" value="$(arg publish_to_px4)"/>
+    <arg name="initial_x" value="$(arg initial_x)"/>
+    <arg name="initial_y" value="$(arg initial_y)"/>
+    <arg name="initial_z" value="$(arg initial_z)"/>
+    <arg name="initial_yaw" value="$(arg initial_yaw)"/>
+  </include>
+</launch>

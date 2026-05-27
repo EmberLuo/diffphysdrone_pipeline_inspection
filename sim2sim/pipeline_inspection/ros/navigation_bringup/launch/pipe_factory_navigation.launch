@@ -1,0 +1,28 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="cloud_topic" default="/cloud_registered"/>
+  <arg name="lidar_topic" default="/livox/lidar2"/>
+  <arg name="lidar_input_type" default="pointcloud2"/>
+  <arg name="depth_topic" default="/e2e/depth/image_raw"/>
+  <arg name="target_speed" default="1.0"/>
+  <arg name="lookahead_distance" default="2.0"/>
+  <arg name="default_goal_z" default="1.8"/>
+  <arg name="net_weight" default="$(arg repo_root)/../../training_code/logs/depth_camera/single_agent_odom/20260504_122043_dob_hover_dp_depth_odom/checkpoint0004.pth"/>
+  <arg name="publish_to_px4" default="true"/>
+
+  <include file="$(find navigation_bringup)/launch/global_astar_navigation.launch">
+    <arg name="repo_root" value="$(arg repo_root)"/>
+    <arg name="map_path" value="$(arg repo_root)/assets/maps/pipe_factory_local.pcd"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="cloud_topic" value="$(arg cloud_topic)"/>
+    <arg name="lidar_topic" value="$(arg lidar_topic)"/>
+    <arg name="lidar_input_type" value="$(arg lidar_input_type)"/>
+    <arg name="depth_topic" value="$(arg depth_topic)"/>
+    <arg name="target_speed" value="$(arg target_speed)"/>
+    <arg name="lookahead_distance" value="$(arg lookahead_distance)"/>
+    <arg name="default_goal_z" value="$(arg default_goal_z)"/>
+    <arg name="net_weight" value="$(arg net_weight)"/>
+    <arg name="publish_to_px4" value="$(arg publish_to_px4)"/>
+  </include>
+</launch>

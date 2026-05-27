@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>navigation_bringup</name>
+  <version>0.1.0</version>
+  <description>Launch files and integration notes for PX4 Point-LIO Fast-Drone E2E navigation.</description>
+  <maintainer email="todo@example.com">pipeline_inspection</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <exec_depend>roslaunch</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>camera_pose_node</exec_depend>
+  <exec_depend>e2e_px4_controller</exec_depend>
+  <exec_depend>global_astar_planner</exec_depend>
+  <exec_depend>global_path_target_bridge</exec_depend>
+  <exec_depend>localization_mode_manager</exec_depend>
+  <exec_depend>map_tools</exec_depend>
+  <exec_depend>pcd_localization</exec_depend>
+  <exec_depend>point_lio</exec_depend>
+</package>

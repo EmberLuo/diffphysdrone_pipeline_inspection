@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>localization_mode_manager</name>
+  <version>0.1.0</version>
+  <description>Simulated GNSS fault injection, localization source switching, and GNSS mode metrics.</description>
+  <maintainer email="todo@example.com">pipeline_inspection</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+</package>

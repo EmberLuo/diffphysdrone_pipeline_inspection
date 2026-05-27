@@ -1,0 +1,63 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="map_path" default="$(arg repo_root)/assets/maps/pipe_factory_local.pcd"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="slam_odom_topic" default="/slam/odom"/>
+  <arg name="gnss_odom_topic" default="/gnss/odom"/>
+  <arg name="gnss_mode_topic" default="/gnss/mode"/>
+  <arg name="localization_mode_topic" default="/localization/mode"/>
+  <arg name="depth_topic" default="/e2e/depth/image_raw"/>
+  <arg name="target_speed" default="1.0"/>
+  <arg name="lookahead_distance" default="2.0"/>
+  <arg name="default_goal_z" default="1.8"/>
+  <arg name="output_dir" default="$(arg repo_root)/assets/validation/gnss_mode_test"/>
+  <arg name="normal_duration" default="20.0"/>
+  <arg name="degraded_duration" default="20.0"/>
+  <arg name="normal_noise_std" default="0.05"/>
+  <arg name="degraded_noise_std" default="0.5"/>
+  <arg name="jump_magnitude" default="1.5"/>
+  <arg name="jump_period" default="5.0"/>
+  <arg name="smoothing_alpha" default="0.25"/>
+  <arg name="start_fault_injector" default="true"/>
+  <arg name="start_metrics_recorder" default="true"/>
+  <arg name="publish_to_px4" default="true"/>
+
+  <include file="$(find navigation_bringup)/launch/global_astar_navigation.launch">
+    <arg name="repo_root" value="$(arg repo_root)"/>
+    <arg name="map_path" value="$(arg map_path)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="slam_odom_topic" value="$(arg slam_odom_topic)"/>
+    <arg name="gnss_odom_topic" value="$(arg gnss_odom_topic)"/>
+    <arg name="gnss_mode_topic" value="$(arg gnss_mode_topic)"/>
+    <arg name="localization_mode_topic" value="$(arg localization_mode_topic)"/>
+    <arg name="depth_topic" value="$(arg depth_topic)"/>
+    <arg name="target_speed" value="$(arg target_speed)"/>
+    <arg name="lookahead_distance" value="$(arg lookahead_distance)"/>
+    <arg name="default_goal_z" value="$(arg default_goal_z)"/>
+    <arg name="publish_to_px4" value="$(arg publish_to_px4)"/>
+    <arg name="controller_debug" value="true"/>
+    <arg name="use_localization_mode_manager" value="true"/>
+    <arg name="localization_smoothing_alpha" value="$(arg smoothing_alpha)"/>
+  </include>
+
+  <node if="$(arg start_fault_injector)" pkg="localization_mode_manager" type="gnss_fault_injector.py" name="gnss_fault_injector" output="screen">
+    <param name="source_odom_topic" value="$(arg slam_odom_topic)"/>
+    <param name="gnss_odom_topic" value="$(arg gnss_odom_topic)"/>
+    <param name="mode_topic" value="$(arg gnss_mode_topic)"/>
+    <param name="normal_duration" value="$(arg normal_duration)" type="double"/>
+    <param name="degraded_duration" value="$(arg degraded_duration)" type="double"/>
+    <param name="normal_noise_std" value="$(arg normal_noise_std)" type="double"/>
+    <param name="degraded_noise_std" value="$(arg degraded_noise_std)" type="double"/>
+    <param name="jump_magnitude" value="$(arg jump_magnitude)" type="double"/>
+    <param name="jump_period" value="$(arg jump_period)" type="double"/>
+  </node>
+
+  <node if="$(arg start_metrics_recorder)" pkg="localization_mode_manager" type="gnss_mode_metrics_recorder.py" name="gnss_mode_metrics_recorder" output="screen">
+    <param name="gnss_odom_topic" value="$(arg gnss_odom_topic)"/>
+    <param name="slam_odom_topic" value="$(arg slam_odom_topic)"/>
+    <param name="selected_odom_topic" value="$(arg odom_topic)"/>
+    <param name="gnss_mode_topic" value="$(arg gnss_mode_topic)"/>
+    <param name="localization_mode_topic" value="$(arg localization_mode_topic)"/>
+    <param name="output_dir" value="$(arg output_dir)"/>
+  </node>
+</launch>

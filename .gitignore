@@ -24,6 +24,12 @@ dist/
 *.pyd
 *.dll
 *.dylib
+*.o
+*.a
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+cmake_install.cmake
 
 # CUDA / C++ extension byproducts
 training_code/src/build/
@@ -40,8 +46,28 @@ training_code/logs/
 **/*.pth
 **/*.pt
 
-# Sim2sim / evaluation outputs
-sim2sim/
+# ROS / catkin generated workspaces
+devel/
+install/
+.catkin_tools/
+catkin_generated/
+sim2sim/pipeline_inspection/integration_ws/
+
+# Third-party code and packaged simulator binaries
+sim2sim/pipeline_inspection/third_party/
+sim2sim/drone_airsim/swarm/LinuxNoEditor/
+
+# Sim2sim experiment, debug, and validation outputs
+sim2sim/**/exps_*/
+sim2sim/**/hover_test_out/
+sim2sim/**/Log/
+sim2sim/**/PCD/
+sim2sim/pipeline_inspection/assets/validation/
+*.bag
+*.bag.active
+*.db3
+*.mcap
+*.log
 
 # Local editor / OS files
 .vscode/

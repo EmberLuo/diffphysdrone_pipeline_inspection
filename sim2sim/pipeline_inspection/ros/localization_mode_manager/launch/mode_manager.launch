@@ -1,0 +1,23 @@
+<launch>
+  <arg name="slam_odom_topic" default="/slam/odom"/>
+  <arg name="gnss_odom_topic" default="/gnss/odom"/>
+  <arg name="gnss_mode_topic" default="/gnss/mode"/>
+  <arg name="selected_odom_topic" default="/Odometry"/>
+  <arg name="localization_mode_topic" default="/localization/mode"/>
+  <arg name="publish_rate" default="50.0"/>
+  <arg name="smoothing_alpha" default="0.25"/>
+  <arg name="gnss_timeout" default="0.5"/>
+  <arg name="slam_timeout" default="0.5"/>
+
+  <node pkg="localization_mode_manager" type="localization_mode_manager.py" name="localization_mode_manager" output="screen">
+    <param name="slam_odom_topic" value="$(arg slam_odom_topic)"/>
+    <param name="gnss_odom_topic" value="$(arg gnss_odom_topic)"/>
+    <param name="gnss_mode_topic" value="$(arg gnss_mode_topic)"/>
+    <param name="selected_odom_topic" value="$(arg selected_odom_topic)"/>
+    <param name="localization_mode_topic" value="$(arg localization_mode_topic)"/>
+    <param name="publish_rate" value="$(arg publish_rate)" type="double"/>
+    <param name="smoothing_alpha" value="$(arg smoothing_alpha)" type="double"/>
+    <param name="gnss_timeout" value="$(arg gnss_timeout)" type="double"/>
+    <param name="slam_timeout" value="$(arg slam_timeout)" type="double"/>
+  </node>
+</launch>

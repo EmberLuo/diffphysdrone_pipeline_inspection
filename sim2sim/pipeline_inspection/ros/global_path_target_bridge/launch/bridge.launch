@@ -1,0 +1,15 @@
+<launch>
+  <arg name="path_topic" default="/global_path"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="target_topic" default="/e2e/local_target"/>
+  <arg name="lookahead_distance" default="2.0"/>
+  <arg name="publish_rate" default="20.0"/>
+
+  <node pkg="global_path_target_bridge" type="global_path_target_bridge.py" name="global_path_target_bridge" output="screen">
+    <param name="path_topic" value="$(arg path_topic)"/>
+    <param name="odom_topic" value="$(arg odom_topic)"/>
+    <param name="target_topic" value="$(arg target_topic)"/>
+    <param name="lookahead_distance" value="$(arg lookahead_distance)" type="double"/>
+    <param name="publish_rate" value="$(arg publish_rate)" type="double"/>
+  </node>
+</launch>

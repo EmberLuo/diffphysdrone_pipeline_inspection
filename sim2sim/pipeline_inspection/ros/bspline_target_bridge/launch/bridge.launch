@@ -1,0 +1,13 @@
+<launch>
+  <arg name="bspline_topic" default="/drone_0_planning/bspline"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="target_topic" default="/e2e/local_target"/>
+  <arg name="lookahead_time" default="1.0"/>
+
+  <node pkg="bspline_target_bridge" type="bspline_target_bridge.py" name="bspline_target_bridge" output="screen">
+    <param name="bspline_topic" value="$(arg bspline_topic)"/>
+    <param name="odom_topic" value="$(arg odom_topic)"/>
+    <param name="target_topic" value="$(arg target_topic)"/>
+    <param name="lookahead_time" value="$(arg lookahead_time)" type="double"/>
+  </node>
+</launch>

@@ -1,0 +1,29 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="cloud_topic" default="/cloud_registered"/>
+  <arg name="depth_topic" default="/e2e/depth/image_raw"/>
+  <arg name="target_speed" default="1.0"/>
+  <arg name="net_weight" default="$(arg repo_root)/../../training_code/logs/depth_camera/single_agent_odom/20260504_122043_dob_hover_dp_depth_odom/checkpoint0004.pth"/>
+
+  <include file="$(find navigation_bringup)/launch/ego_px4.launch">
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="cloud_topic" value="$(arg cloud_topic)"/>
+    <arg name="enable_traj_server" value="false"/>
+  </include>
+
+  <include file="$(find bspline_target_bridge)/launch/bridge.launch">
+    <arg name="bspline_topic" value="/drone_0_planning/bspline"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="target_topic" value="/e2e/local_target"/>
+    <arg name="lookahead_time" value="1.0"/>
+  </include>
+
+  <include file="$(find e2e_px4_controller)/launch/controller.launch">
+    <arg name="net_weight" value="$(arg net_weight)"/>
+    <arg name="depth_topic" value="$(arg depth_topic)"/>
+    <arg name="odom_topic" value="$(arg odom_topic)"/>
+    <arg name="target_topic" value="/e2e/local_target"/>
+    <arg name="target_speed" value="$(arg target_speed)"/>
+  </include>
+</launch>

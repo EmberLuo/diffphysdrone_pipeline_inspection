@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>global_path_target_bridge</name>
+  <version>0.1.0</version>
+  <description>Publishes an E2E local target by looking ahead on a nav_msgs/Path.</description>
+  <maintainer email="todo@example.com">pipeline_inspection</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+</package>

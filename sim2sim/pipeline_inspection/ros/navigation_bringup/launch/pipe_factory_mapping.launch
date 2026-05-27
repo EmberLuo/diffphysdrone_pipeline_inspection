@@ -1,0 +1,20 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="start_px4" default="true"/>
+  <arg name="start_livox_bridge" default="true"/>
+  <arg name="rviz" default="false"/>
+  <arg name="vehicle" default="iris"/>
+  <arg name="sdf" default="$(arg repo_root)/sim/models/iris_mid360/iris_mid360.sdf"/>
+  <arg name="gui" default="false"/>
+
+  <include file="$(find navigation_bringup)/launch/point_lio_mapping.launch">
+    <arg name="repo_root" value="$(arg repo_root)"/>
+    <arg name="world" value="$(arg repo_root)/sim/worlds/pipe_factory_local.world"/>
+    <arg name="start_px4" value="$(arg start_px4)"/>
+    <arg name="vehicle" value="$(arg vehicle)"/>
+    <arg name="sdf" value="$(arg sdf)"/>
+    <arg name="gui" value="$(arg gui)"/>
+    <arg name="start_livox_bridge" value="$(arg start_livox_bridge)"/>
+    <arg name="rviz" value="$(arg rviz)"/>
+  </include>
+</launch>

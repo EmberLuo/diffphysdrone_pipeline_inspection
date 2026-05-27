@@ -1,0 +1,29 @@
+<launch>
+  <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="map_path" default="$(arg repo_root)/assets/maps/powerplant_local.pcd"/>
+  <arg name="lidar_topic" default="/livox/lidar2"/>
+  <arg name="input_type" default="pointcloud"/>
+  <arg name="imu_topic" default="/livox/imu"/>
+  <arg name="odom_topic" default="/Odometry"/>
+  <arg name="cloud_topic" default="/cloud_registered"/>
+  <arg name="initial_x" default="0.0"/>
+  <arg name="initial_y" default="0.0"/>
+  <arg name="initial_z" default="0.0"/>
+  <arg name="initial_yaw" default="0.0"/>
+  <arg name="publish_to_px4" default="true"/>
+
+  <node pkg="pcd_localization" type="localization_node" name="pcd_localization" output="screen">
+    <param name="map_path" value="$(arg map_path)"/>
+    <param name="input_topic" value="$(arg lidar_topic)"/>
+    <param name="input_type" value="$(arg input_type)"/>
+    <param name="imu_topic" value="$(arg imu_topic)"/>
+    <param name="odom_topic" value="$(arg odom_topic)"/>
+    <param name="cloud_topic" value="$(arg cloud_topic)"/>
+    <param name="initial_x" value="$(arg initial_x)" type="double"/>
+    <param name="initial_y" value="$(arg initial_y)" type="double"/>
+    <param name="initial_z" value="$(arg initial_z)" type="double"/>
+    <param name="initial_yaw" value="$(arg initial_yaw)" type="double"/>
+  </node>
+
+  <include if="$(arg publish_to_px4)" file="$(find camera_pose_node)/pose_tf.launch"/>
+</launch>

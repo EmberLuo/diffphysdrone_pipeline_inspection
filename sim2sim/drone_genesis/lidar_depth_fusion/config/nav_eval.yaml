@@ -1,0 +1,111 @@
+sim:
+  dt: 0.01
+  substeps: 2
+  max_steps: 4500
+  max_visualize_fps: 60
+  enable_collision: true
+
+scene:
+  background_color: [0.90, 0.90, 0.90]
+  plane_color: [0.72, 0.72, 0.72]
+  viewer_camera_pos: [0.0, -8.0, 5.0]
+  viewer_camera_lookat: [0.0, 0.0, 1.2]
+  viewer_camera_fov: 45
+  drone_colors:
+    - [0.90, 0.15, 0.15]
+  enable_record_camera: true
+  record_camera:
+    res: [1280, 720]
+    pos: [0.0, -8.0, 5.0]
+    lookat: [0.0, 0.0, 1.2]
+    fov: 45
+
+lidar_sensor:
+  sensor_type: simple_grid
+  horizontal_line_num: 120
+  vertical_line_num: 6
+  horizontal_fov_deg_min: -180
+  horizontal_fov_deg_max: 180
+  vertical_fov_deg_min: -10
+  vertical_fov_deg_max: 20
+  max_range: 4.0
+  update_frequency_hz: 15.0
+  sensor_pos_offset: [0.0, 0.0, 0.03]
+  pointcloud_in_world_frame: false
+  enable_sensor_noise: false
+
+depth_camera:
+  width: 64
+  height: 48
+  pool: 4
+  fov_horizontal: 55.84
+  link_idx_local: 0
+  pos_offset: [0.25, 0.0, -0.1]
+  euler_offset: [0.0, 10.0, 0.0]
+  min_range: 0.3
+  max_range: 24.0
+  no_hit_value: 24.0
+
+task:
+  default_env: single_nav
+  max_duration_sec: 35.0
+  reach_threshold: 1.5
+  target_sphere_scale: 0.05
+  target_color: [0.20, 0.40, 0.90]
+  start_noise:
+    xy: 0.10
+    z: 0.25
+  layouts:
+    single_nav:
+      agents:
+        - {name: drone_1, start: [-1.5, 0.0, 1.0], goal: [5.0, 0.0, 1.0]}
+
+termination:
+  enable_height_termination: true
+  enable_attitude_termination: false
+  enable_bounds_termination: true
+  min_height: 0.05
+  max_roll_deg: 89.0
+  max_pitch_deg: 89.0
+  max_abs_x: 60.0
+  max_abs_y: 30.0
+  max_abs_z: 20.0
+  inter_drone_collision_dist: 0.28
+
+policy:
+  no_odom: true
+  margin: 0.15
+
+policy_eval:
+  control_hz: 15.0
+  ctl_error_std: 0.17
+
+obstacles:
+  static_cylinders:
+    enable: true
+    obstacle_color: [0.35, 0.35, 0.38]
+    cylinders:
+      - {pos: [1.0, -1.0, 1.3], radius: 0.28, height: 2.6}
+      - {pos: [1.0,  1.0, 1.3], radius: 0.28, height: 2.6}
+      - {pos: [2.5, -0.5, 1.3], radius: 0.20, height: 2.0}
+      - {pos: [2.5,  0.5, 1.3], radius: 0.20, height: 2.0}
+      - {pos: [4.0, -1.0, 1.3], radius: 0.28, height: 2.6}
+      - {pos: [4.0,  1.0, 1.3], radius: 0.28, height: 2.6}
+      - {pos: [3.0,  0.0, 1.3], radius: 0.15, height: 1.5}
+      - {pos: [1.5,  0.0, 1.3], radius: 0.15, height: 1.5}
+
+controller:
+  use_urdf_params: true
+  gravity: 9.80665
+  hover_throttle: 0.297
+  twr_max: 2.25
+  hover_rpm_trim: 1.0
+  rpm_min: 0.0
+  rpm_max: 0.0
+  attitude_mix_scale: 0.2
+  kp_angle: [2.0, 2.0, 2.0]
+  max_rate: [15.0, 15.0, 5.0]
+  pid:
+    roll:  {p: 0.20, i: 0.01, d: 0.001}
+    pitch: {p: 0.20, i: 0.01, d: 0.001}
+    yaw:   {p: 0.20, i: 0.01, d: 0.001}
