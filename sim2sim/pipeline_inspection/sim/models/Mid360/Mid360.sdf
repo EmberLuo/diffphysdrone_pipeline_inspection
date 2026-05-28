@@ -40,7 +40,7 @@
       <velocity_decay/>
       <sensor type="ray" name="laser_livox">
         <pose>0 0 0.05 0 0 0</pose>
-        <visualize>True</visualize>
+        <visualize>false</visualize>
         <always_on>True</always_on>
         <update_rate>10</update_rate>
         <!-- This ray plgin is only for visualization. -->
@@ -71,9 +71,9 @@
 				  <stddev>0.0</stddev>
 			  </noise>
 			  </ray>
-        <visualize>true</visualize>
-		    <samples>18000</samples>
-		    <downsample>1</downsample>
+        <visualize>false</visualize>
+		    <samples>9000</samples>
+		    <downsample>2</downsample>
 		    <csv_file_name>/home/ember/GitHub/diffphysdrone_pipeline_inspection/sim2sim/pipeline_inspection/sim/models/Mid360/scan_mode/mid360-real-centr.csv</csv_file_name>
         <publish_pointcloud_type>2</publish_pointcloud_type>
 		    <ros_topic>/livox/lidar2</ros_topic>
