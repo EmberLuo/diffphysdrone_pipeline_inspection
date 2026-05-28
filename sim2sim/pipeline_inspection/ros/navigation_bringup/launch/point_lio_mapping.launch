@@ -14,7 +14,9 @@
   <arg name="livox_custom_topic" default="/livox/lidar"/>
   <arg name="livox_input_type" default="pointcloud"/>
   <arg name="scan_period" default="0.1"/>
-  <arg name="use_imu_as_input" default="false"/>
+  <arg name="use_imu_as_input" default="true"/>
+  <arg name="imu_topic" default="/mavros/imu/data"/>
+  <arg name="use_sim_mavros_imu_extrinsic" default="true"/>
 
   <group if="$(arg start_px4)">
     <include file="$(find px4)/launch/mavros_posix_sitl.launch">
@@ -44,5 +46,7 @@
     <arg name="odom_topic" value="$(arg odom_topic)"/>
     <arg name="cloud_topic" value="$(arg cloud_topic)"/>
     <arg name="use_imu_as_input" value="$(arg use_imu_as_input)"/>
+    <arg name="imu_topic" value="$(arg imu_topic)"/>
+    <arg name="use_sim_mavros_imu_extrinsic" value="$(arg use_sim_mavros_imu_extrinsic)"/>
   </include>
 </launch>
