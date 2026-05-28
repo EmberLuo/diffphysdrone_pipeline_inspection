@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <model name='iris_mid360'>
+    <include>
+      <uri>model://iris</uri>
+    </include>
+    <include>
+      <uri>model://Mid360</uri>
+      <pose>0.07 0 0.072 0 0.3925 0</pose>
+      <!-- <pose>0 0 0.15 0 0 0</pose> -->
+    </include>
+    <joint name="livox_joint" type="fixed">
+      <child>Mid360::livox_link</child>
+      <parent>iris::base_link</parent>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <upper>0</upper>
+          <lower>0</lower>
+        </limit>
+      </axis>
+    </joint>
+  
+<!--
+  Add this snippet to the PX4 iris_mid360 SDF/Xacro model under the base_link.
+  It publishes a forward depth image on /e2e/depth/image_raw via gazebo_ros_openni_kinect.
+-->
+<link name="e2e_depth_camera_link">
+  <pose>0.12 0 0.04 0 0 0</pose>
+</link>
+<joint name="e2e_depth_camera_joint" type="fixed">
+  <parent>base_link</parent>
+  <child>e2e_depth_camera_link</child>
+</joint>
+<gazebo reference="e2e_depth_camera_link">
+  <sensor type="depth" name="e2e_depth_camera">
+    <always_on>true</always_on>
+    <update_rate>30</update_rate>
+    <camera>
+      <horizontal_fov>1.5707963</horizontal_fov>
+      <image>
+        <width>640</width>
+        <height>480</height>
+        <format>R8G8B8</format>
+      </image>
+      <clip>
+        <near>0.2</near>
+        <far>24.0</far>
+      </clip>
+    </camera>
+    <plugin name="e2e_depth_camera_controller" filename="libgazebo_ros_openni_kinect.so">
+      <cameraName>e2e</cameraName>
+      <alwaysOn>true</alwaysOn>
+      <updateRate>30</updateRate>
+      <imageTopicName>rgb/image_raw</imageTopicName>
+      <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
+      <depthImageTopicName>depth/image_raw</depthImageTopicName>
+      <depthImageCameraInfoTopicName>depth/camera_info</depthImageCameraInfoTopicName>
+      <pointCloudTopicName>depth/points</pointCloudTopicName>
+      <frameName>e2e_depth_camera_link</frameName>
+      <pointCloudCutoff>0.2</pointCloudCutoff>
+      <pointCloudCutoffMax>24.0</pointCloudCutoffMax>
+    </plugin>
+  </sensor>
+</gazebo>
+
+</model>
+</sdf>

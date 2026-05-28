@@ -4,12 +4,13 @@
   <arg name="start_px4" default="true"/>
   <arg name="start_livox_bridge" default="true"/>
   <arg name="rviz" default="false"/>
+  <arg name="interactive" default="false"/>
   <arg name="pcd_output" default="$(arg repo_root)/assets/maps/powerplant_local.pcd"/>
 
   <group if="$(arg start_px4)">
     <include file="$(find px4)/launch/mavros_posix_sitl.launch">
-      <arg name="enable_mavros" value="true"/>
       <arg name="world" value="$(arg world)"/>
+      <arg name="interactive" value="$(arg interactive)"/>
     </include>
   </group>
 

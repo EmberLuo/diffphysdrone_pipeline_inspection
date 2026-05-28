@@ -20,7 +20,15 @@ if [[ ! -f /opt/ros/noetic/setup.bash ]]; then
   exit 1
 fi
 
+source_compat() {
+  set +u
+  # shellcheck disable=SC1090
+  source "$1"
+  set -u
+}
+
 export REPO_ROOT PX4_DIR
+export ROS_MASTER_URI="${ROS_MASTER_URI:-http://localhost:11311}"
 
 if [[ "${BOOTSTRAP_PX4:-1}" == "1" ]]; then
   "$SCRIPT_DIR/bootstrap_px4_noetic.sh"
@@ -35,11 +43,11 @@ if [[ -z "${MID360_PLUGIN_DIR:-}" && -f "$HOME/mid360_sim_ws/devel/lib/liblivox_
   export MID360_PLUGIN_DIR="$HOME/mid360_sim_ws/devel/lib"
 fi
 
-source /opt/ros/noetic/setup.bash
+source_compat /opt/ros/noetic/setup.bash
 "$SCRIPT_DIR/create_nav_integration_ws.sh" "$WS_DIR"
 (cd "$WS_DIR" && catkin_make -DCMAKE_BUILD_TYPE=Release)
-source "$SCRIPT_DIR/use_env.sh"
-source "$WS_DIR/devel/setup.bash"
+source_compat "$WS_DIR/devel/setup.bash"
+source_compat "$SCRIPT_DIR/use_env.sh"
 
 rm -f "$REPO_ROOT/third_party/point_lio/PCD"/scans*.pcd
 
@@ -63,8 +71,8 @@ MAPPING_PID=$!
 
 sleep 25
 rostopic type /livox/lidar | tee "$LOG_DIR/livox_lidar_type.txt"
-rostopic echo -n 1 /Odometry > "$LOG_DIR/point_lio_odom_first.yaml"
-rostopic echo -n 1 /cloud_registered > "$LOG_DIR/point_lio_cloud_first.yaml"
+timeout 30 rostopic echo -n 1 /Odometry > "$LOG_DIR/point_lio_odom_first.yaml"
+timeout 30 rostopic echo -n 1 /cloud_registered > "$LOG_DIR/point_lio_cloud_first.yaml"
 
 "$SCRIPT_DIR/offboard_preflight.sh" >"$LOG_DIR/offboard_preflight.log" 2>&1 || true
 timeout "$MAPPING_SECONDS" python3 "$SCRIPT_DIR/sitl_square_mission.py" \
@@ -92,7 +100,7 @@ roslaunch navigation_bringup point_lio_relocalization.launch \
 RELOC_PID=$!
 
 sleep "$RELOCALIZATION_SECONDS"
-rostopic echo -n 1 /Odometry > "$LOG_DIR/relocalization_odom_first.yaml"
-rostopic echo -n 1 /cloud_registered > "$LOG_DIR/relocalization_cloud_first.yaml"
+timeout 30 rostopic echo -n 1 /Odometry > "$LOG_DIR/relocalization_odom_first.yaml"
+timeout 30 rostopic echo -n 1 /cloud_registered > "$LOG_DIR/relocalization_cloud_first.yaml"
 
 echo "[OK] Point-LIO smoke artifacts written to $LOG_DIR"

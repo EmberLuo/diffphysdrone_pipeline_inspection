@@ -59,8 +59,8 @@ because catkin build files contain absolute paths.
 ## Mapping
 
 ```bash
-source tools/use_env.sh
 source integration_ws/devel/setup.bash
+source tools/use_env.sh
 roslaunch navigation_bringup point_lio_mapping.launch gui:=false rviz:=false
 ```
 
@@ -102,8 +102,8 @@ cross-over headers, risers, storage tanks, pump skids, catwalks, and red visual
 inspection markers.
 
 ```bash
-source tools/use_env.sh
 source integration_ws/devel/setup.bash
+source tools/use_env.sh
 roslaunch navigation_bringup pipe_factory_mapping.launch rviz:=false
 ```
 
@@ -128,8 +128,8 @@ python3 tools/generate_pipe_factory_pcd.py
 Start PX4/Gazebo with the same world and initial pose, then:
 
 ```bash
-source tools/use_env.sh
 source integration_ws/devel/setup.bash
+source tools/use_env.sh
 roslaunch navigation_bringup global_astar_navigation.launch target_speed:=1.0
 ```
 

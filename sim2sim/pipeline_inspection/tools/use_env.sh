@@ -12,7 +12,15 @@ export LD_LIBRARY_PATH="$HOME/.local/lib:${LD_LIBRARY_PATH:-}"
 export LIBRARY_PATH="$HOME/.local/lib:${LIBRARY_PATH:-}"
 export PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 export CMAKE_PREFIX_PATH="$HOME/.local:${CMAKE_PREFIX_PATH:-}"
-export GEOGRAPHICLIB_DATA="${GEOGRAPHICLIB_DATA:-$HOME/.local/share/GeographicLib}"
+if [[ -z "${GEOGRAPHICLIB_DATA:-}" || ! -f "$GEOGRAPHICLIB_DATA/geoids/egm96-5.pgm" ]]; then
+  if [[ -f "$HOME/.local/share/GeographicLib/geoids/egm96-5.pgm" ]]; then
+    export GEOGRAPHICLIB_DATA="$HOME/.local/share/GeographicLib"
+  elif [[ -f /usr/share/GeographicLib/geoids/egm96-5.pgm ]]; then
+    export GEOGRAPHICLIB_DATA="/usr/share/GeographicLib"
+  else
+    export GEOGRAPHICLIB_DATA="$HOME/.local/share/GeographicLib"
+  fi
+fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

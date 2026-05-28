@@ -5,23 +5,24 @@
   <arg name="vehicle" default="iris"/>
   <arg name="sdf" default="$(arg repo_root)/sim/models/iris_mid360/iris_mid360.sdf"/>
   <arg name="gui" default="false"/>
+  <arg name="interactive" default="false"/>
   <arg name="start_livox_bridge" default="true"/>
   <arg name="rviz" default="false"/>
   <arg name="odom_topic" default="/Odometry"/>
   <arg name="cloud_topic" default="/cloud_registered"/>
   <arg name="livox_input_topic" default="/livox/lidar2"/>
   <arg name="livox_custom_topic" default="/livox/lidar"/>
-  <arg name="livox_input_type" default="pointcloud2"/>
+  <arg name="livox_input_type" default="pointcloud"/>
   <arg name="scan_period" default="0.1"/>
   <arg name="use_imu_as_input" default="false"/>
 
   <group if="$(arg start_px4)">
     <include file="$(find px4)/launch/mavros_posix_sitl.launch">
-      <arg name="enable_mavros" value="true"/>
       <arg name="vehicle" value="$(arg vehicle)"/>
       <arg name="sdf" value="$(arg sdf)"/>
       <arg name="world" value="$(arg world)"/>
       <arg name="gui" value="$(arg gui)"/>
+      <arg name="interactive" value="$(arg interactive)"/>
     </include>
   </group>
 

@@ -6,8 +6,9 @@
   <arg name="vehicle" default="iris"/>
   <arg name="sdf" default="$(arg repo_root)/sim/models/iris_mid360/iris_mid360.sdf"/>
   <arg name="gui" default="false"/>
+  <arg name="interactive" default="false"/>
   <arg name="lidar_topic" default="/livox/lidar2"/>
-  <arg name="lidar_input_type" default="pointcloud2"/>
+  <arg name="lidar_input_type" default="pointcloud"/>
   <arg name="odom_topic" default="/Odometry"/>
   <arg name="cloud_topic" default="/cloud_registered"/>
   <arg name="publish_to_px4" default="true"/>
@@ -18,11 +19,11 @@
 
   <group if="$(arg start_px4)">
     <include file="$(find px4)/launch/mavros_posix_sitl.launch">
-      <arg name="enable_mavros" value="true"/>
       <arg name="vehicle" value="$(arg vehicle)"/>
       <arg name="sdf" value="$(arg sdf)"/>
       <arg name="world" value="$(arg world)"/>
       <arg name="gui" value="$(arg gui)"/>
+      <arg name="interactive" value="$(arg interactive)"/>
     </include>
   </group>
 

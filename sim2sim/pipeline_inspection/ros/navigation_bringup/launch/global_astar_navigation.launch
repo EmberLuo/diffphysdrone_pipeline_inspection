@@ -5,7 +5,7 @@
   <arg name="slam_odom_topic" default="/slam/odom"/>
   <arg name="cloud_topic" default="/cloud_registered"/>
   <arg name="lidar_topic" default="/livox/lidar2"/>
-  <arg name="lidar_input_type" default="pointcloud2"/>
+  <arg name="lidar_input_type" default="pointcloud"/>
   <arg name="depth_topic" default="/e2e/depth/image_raw"/>
   <arg name="target_speed" default="1.0"/>
   <arg name="lookahead_distance" default="2.0"/>
