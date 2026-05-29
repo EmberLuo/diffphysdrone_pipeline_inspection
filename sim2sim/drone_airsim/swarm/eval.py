@@ -62,6 +62,13 @@ import torch
 import torch.nn.functional as F
 
 from training_code.model import Model
+from wind_utils import (
+    WindSampler,
+    add_wind_args,
+    summarize_wind_trace,
+    wind_config_from_args,
+    wind_sample_to_record,
+)
 
 def quaternion_to_matrix(quaternions: torch.Tensor) -> torch.Tensor:
     """
@@ -105,12 +112,15 @@ parser.add_argument('--no_odom', default=False, action='store_true')
 parser.add_argument('--seed', default=0, type=int)
 parser.add_argument('--trace_policy', default=False, action='store_true')
 parser.add_argument('--trace_stride', default=1, type=int)
+parser.add_argument('--duration', default=30, type=float)
+add_wind_args(parser)
 
 args = parser.parse_args()
 print(args)
 random.seed(args.seed)
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
+wind_config = wind_config_from_args(args)
 
 
 hover_thr = 0.297
@@ -138,6 +148,8 @@ target_pos = [w[-1] for w in agent_waypoints]
 traj_history = {agent_name: [] for agent_name in agent_names}
 policy_trace = []
 trace_jsonl_fp = None
+wind_trace = []
+wind_trace_jsonl_fp = None
 
 # connect to the AirSim simulator
 client = airsim.MultirotorClient()
@@ -151,7 +163,7 @@ if args.resume:
 
 @torch.no_grad()
 def main():
-    global trace_jsonl_fp
+    global trace_jsonl_fp, wind_trace_jsonl_fp
     h = None
     for _ in range(10):
         _, _, h = model(
@@ -223,19 +235,21 @@ def main():
     policy_updates = 0
     if args.trace_policy and trace_jsonl_fp is None:
         trace_jsonl_fp = open(f"{log_dir}/policy_trace.jsonl", "w")
+    if wind_trace_jsonl_fp is None:
+        wind_trace_jsonl_fp = open(f"{log_dir}/wind_trace.jsonl", "w")
     rate = Rate(15 * args.clockspeed)
     t_begin_real = time()
     t_now = t_begin = state.timestamp / 1e9
-    t_end = t_begin + 30
-    # wind = [0, 0, 0]
+    t_end = t_begin + float(args.duration)
+    wind_sampler = WindSampler(wind_config, rng=np.random.RandomState(args.seed))
     # a_set = [0, 0, 0]
     ctl_error = 0
     ctl_error = torch.randn((len(agents), 3)) * 0.17
-    # wind = [0, 0, 0]
     while t_now < t_end:
         pbar.update()
-        # wind = [0.95 * w + 0.05 * random.normalvariate(0, 0.2) for w in wind]
-        # client.simSetWind(Vector3r(*wind))
+        wind_sample = wind_sampler.step(policy_updates)
+        if wind_sample.resampled:
+            client.simSetWind(Vector3r(*wind_sample.wind_airsim_ned))
 
         # take images
         depth = []
@@ -285,6 +299,13 @@ def main():
                     if all(done_flag):
                         t_end = t_now + 0.5
 
+        wall_time = float(time() - t_begin_real)
+        wind_record = wind_sample_to_record(wind_sample, max(duration_per_agent), wall_time)
+        wind_trace.append(wind_record)
+        if wind_trace_jsonl_fp is not None:
+            wind_trace_jsonl_fp.write(json.dumps(wind_record) + '\n')
+            wind_trace_jsonl_fp.flush()
+
         # target velocity points to the target (with norm bounded by target_speed)
         target_v = p_target - last_p
         target_v_norm = torch.norm(target_v, 2, -1, keepdim=True)
@@ -332,7 +353,6 @@ def main():
             base_vel_cpu = v.detach().cpu()
             base_pos_cpu = last_p.detach().cpu()
             target_pos_cpu = p_target.detach().cpu()
-            wall_time = float(time() - t_begin_real)
             for i, name in enumerate(agent_names):
                 depth_i = depth[i, 0].detach().cpu().numpy()
                 depth_flat = depth_i.reshape(-1)
@@ -357,6 +377,10 @@ def main():
                     'base_lin_vel_world': base_vel_cpu[i].tolist(),
                     'base_pos_world': base_pos_cpu[i].tolist(),
                     'target_pos_world': target_pos_cpu[i].tolist(),
+                    'wind_train_world': wind_record['wind_train_world'],
+                    'wind_airsim_ned': wind_record['wind_airsim_ned'],
+                    'wind_norm': wind_record['wind_norm'],
+                    'wind_resampled': wind_record['resampled'],
                     'action': action_cpu[i].tolist(),
                     'v_setpoint': v_setpoint[i].tolist(),
                     'v_est': v_est[i].tolist(),
@@ -408,7 +432,9 @@ def main():
 
 if __name__ == '__main__':
     import shutil
+    script_dir = os.path.dirname(os.path.abspath(__file__))
     shutil.copy(__file__, f"{log_dir}/eval.py")
+    shutil.copy(os.path.join(script_dir, "wind_utils.py"), f"{log_dir}/wind_utils.py")
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
     ffmpeg_p = subprocess.Popen([
         '/usr/bin/ffmpeg',
@@ -423,6 +449,14 @@ if __name__ == '__main__':
     ], stdin=subprocess.PIPE)
 
     def cleanup():
+        global wind_trace_jsonl_fp
+        try:
+            client.simSetWind(Vector3r(0, 0, 0))
+        except Exception as exc:
+            print(f"warning: failed to reset AirSim wind: {exc}")
+        wind_summary = summarize_wind_trace(wind_trace, wind_config, args.seed)
+        with open(f"{log_dir}/wind_summary.json", 'w') as f:
+            json.dump(wind_summary, f, indent=2, sort_keys=True)
         with open(f"{log_dir}/traj_history.json", 'w') as f:
             json.dump(traj_history, f)
         if args.trace_policy:
@@ -433,10 +467,16 @@ if __name__ == '__main__':
                     'seed': args.seed,
                     'sr': args.sr,
                     'no_odom': bool(args.no_odom),
+                    'duration': args.duration,
+                    'wind_config': wind_config,
+                    'wind_summary': wind_summary,
                     'records': policy_trace,
                 }, f)
         if trace_jsonl_fp is not None:
             trace_jsonl_fp.close()
+        if wind_trace_jsonl_fp is not None:
+            wind_trace_jsonl_fp.close()
+            wind_trace_jsonl_fp = None
         ffmpeg_p.stdin.close()
         ffmpeg_p.wait()
         depth_recorder.close()

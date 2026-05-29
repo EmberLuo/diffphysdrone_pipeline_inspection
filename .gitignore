@@ -58,6 +58,7 @@ sim2sim/pipeline_inspection/third_party/
 sim2sim/drone_airsim/swarm/LinuxNoEditor/
 
 # Sim2sim experiment, debug, and validation outputs
+thesis_outputs/
 sim2sim/**/exps_*/
 sim2sim/**/hover_test_out/
 sim2sim/**/Log/

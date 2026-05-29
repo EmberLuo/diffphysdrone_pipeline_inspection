@@ -6,6 +6,8 @@
   <arg name="path_topic" default="/global_path"/>
   <arg name="resolution" default="0.25"/>
   <arg name="search_step" default="0.5"/>
+  <arg name="obstacles_inflation" default="0.45"/>
+  <arg name="pcd_leaf_size" default="0.25"/>
   <arg name="default_goal_z" default="1.2"/>
 
   <node pkg="global_astar_planner" type="global_astar_planner_node" name="global_astar_planner" output="screen">
@@ -15,6 +17,8 @@
     <param name="path_topic" value="$(arg path_topic)"/>
     <param name="resolution" value="$(arg resolution)" type="double"/>
     <param name="search_step" value="$(arg search_step)" type="double"/>
+    <param name="obstacles_inflation" value="$(arg obstacles_inflation)" type="double"/>
+    <param name="pcd_leaf_size" value="$(arg pcd_leaf_size)" type="double"/>
     <param name="default_goal_z" value="$(arg default_goal_z)" type="double"/>
   </node>
 </launch>

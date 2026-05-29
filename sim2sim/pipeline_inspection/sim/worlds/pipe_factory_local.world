@@ -9,7 +9,7 @@
 
     <gui fullscreen="0">
       <camera name="user_camera">
-        <pose>-18 -24 15 0 0.45 0.72</pose>
+        <pose>-28 -34 20 0 0.48 0.72</pose>
       </camera>
     </gui>
 
@@ -50,14 +50,14 @@
         <collision name="collision">
           <geometry>
             <box>
-              <size>56 34 0.02</size>
+              <size>72 44 0.02</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>56 34 0.02</size>
+              <size>72 44 0.02</size>
             </box>
           </geometry>
           <material>
@@ -72,7 +72,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>46 2.4 0.03</size>
+              <size>60 2.6 0.03</size>
             </box>
           </geometry>
           <material>
@@ -87,7 +87,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>46 0.08 0.02</size>
+              <size>60 0.08 0.02</size>
             </box>
           </geometry>
           <material>
@@ -102,7 +102,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>46 0.08 0.02</size>
+              <size>60 0.08 0.02</size>
             </box>
           </geometry>
           <material>
@@ -123,7 +123,7 @@
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>46.0</length>
+              <length>60.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -131,7 +131,7 @@
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>46.0</length>
+              <length>60.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -142,12 +142,12 @@
       </link>
 
       <link name="north_low_water">
-        <pose>0 8.35 1.95 0 1.5708 0</pose>
+        <pose>0 8.35 2.45 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>44.0</length>
+              <length>58.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -155,7 +155,7 @@
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>44.0</length>
+              <length>58.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -166,12 +166,12 @@
       </link>
 
       <link name="north_mid_product">
-        <pose>0 7.35 2.55 0 1.5708 0</pose>
+        <pose>0 7.35 3.65 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.22</radius>
-              <length>43.5</length>
+              <length>57.5</length>
             </cylinder>
           </geometry>
         </collision>
@@ -179,7 +179,7 @@
           <geometry>
             <cylinder>
               <radius>0.22</radius>
-              <length>43.5</length>
+              <length>57.5</length>
             </cylinder>
           </geometry>
           <material>
@@ -190,12 +190,12 @@
       </link>
 
       <link name="north_high_gas">
-        <pose>0 8.0 3.25 0 1.5708 0</pose>
+        <pose>0 8.0 5.05 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.16</radius>
-              <length>42.0</length>
+              <length>56.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -203,7 +203,7 @@
           <geometry>
             <cylinder>
               <radius>0.16</radius>
-              <length>42.0</length>
+              <length>56.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -214,12 +214,12 @@
       </link>
 
       <link name="north_top_utility">
-        <pose>0 7.55 4.05 0 1.5708 0</pose>
+        <pose>0 7.55 6.65 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>40.0</length>
+              <length>54.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -227,7 +227,7 @@
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>40.0</length>
+              <length>54.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -244,7 +244,7 @@
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>46.0</length>
+              <length>60.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -252,7 +252,7 @@
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>46.0</length>
+              <length>60.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -263,12 +263,12 @@
       </link>
 
       <link name="south_low_water">
-        <pose>0 -8.35 1.95 0 1.5708 0</pose>
+        <pose>0 -8.35 2.45 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>44.0</length>
+              <length>58.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -276,7 +276,7 @@
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>44.0</length>
+              <length>58.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -287,12 +287,12 @@
       </link>
 
       <link name="south_mid_product">
-        <pose>0 -7.35 2.55 0 1.5708 0</pose>
+        <pose>0 -7.35 3.65 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.22</radius>
-              <length>43.5</length>
+              <length>57.5</length>
             </cylinder>
           </geometry>
         </collision>
@@ -300,7 +300,7 @@
           <geometry>
             <cylinder>
               <radius>0.22</radius>
-              <length>43.5</length>
+              <length>57.5</length>
             </cylinder>
           </geometry>
           <material>
@@ -311,12 +311,12 @@
       </link>
 
       <link name="south_high_gas">
-        <pose>0 -8.0 3.25 0 1.5708 0</pose>
+        <pose>0 -8.0 5.05 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.16</radius>
-              <length>42.0</length>
+              <length>56.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -324,7 +324,7 @@
           <geometry>
             <cylinder>
               <radius>0.16</radius>
-              <length>42.0</length>
+              <length>56.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -335,12 +335,12 @@
       </link>
 
       <link name="south_top_utility">
-        <pose>0 -7.55 4.05 0 1.5708 0</pose>
+        <pose>0 -7.55 6.65 0 1.5708 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>40.0</length>
+              <length>54.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -348,7 +348,7 @@
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>40.0</length>
+              <length>54.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -360,12 +360,12 @@
 
       <!-- Cross-over pipes and headers. -->
       <link name="cross_header_west_high">
-        <pose>-18.0 0 3.65 1.5708 0 0</pose>
+        <pose>-26.0 0 5.85 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>15.2</length>
+              <length>16.8</length>
             </cylinder>
           </geometry>
         </collision>
@@ -373,7 +373,7 @@
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>15.2</length>
+              <length>16.8</length>
             </cylinder>
           </geometry>
           <material>
@@ -384,12 +384,12 @@
       </link>
 
       <link name="cross_header_west_low">
-        <pose>-18.0 0 2.25 1.5708 0 0</pose>
+        <pose>-26.0 0 3.05 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>10.6</length>
+              <length>12.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -397,7 +397,7 @@
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>10.6</length>
+              <length>12.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -408,12 +408,12 @@
       </link>
 
       <link name="cross_header_midwest">
-        <pose>-9.0 0 4.25 1.5708 0 0</pose>
+        <pose>-13.0 0 7.05 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>14.6</length>
+              <length>16.2</length>
             </cylinder>
           </geometry>
         </collision>
@@ -421,7 +421,7 @@
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>14.6</length>
+              <length>16.2</length>
             </cylinder>
           </geometry>
           <material>
@@ -432,12 +432,12 @@
       </link>
 
       <link name="cross_header_mideast">
-        <pose>9.0 0 4.25 1.5708 0 0</pose>
+        <pose>13.0 0 7.05 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>14.6</length>
+              <length>16.2</length>
             </cylinder>
           </geometry>
         </collision>
@@ -445,7 +445,7 @@
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>14.6</length>
+              <length>16.2</length>
             </cylinder>
           </geometry>
           <material>
@@ -456,12 +456,12 @@
       </link>
 
       <link name="cross_header_east_high">
-        <pose>18.0 0 3.65 1.5708 0 0</pose>
+        <pose>26.0 0 5.85 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>15.2</length>
+              <length>16.8</length>
             </cylinder>
           </geometry>
         </collision>
@@ -469,7 +469,7 @@
           <geometry>
             <cylinder>
               <radius>0.18</radius>
-              <length>15.2</length>
+              <length>16.8</length>
             </cylinder>
           </geometry>
           <material>
@@ -480,12 +480,12 @@
       </link>
 
       <link name="cross_header_east_low">
-        <pose>18.0 0 2.25 1.5708 0 0</pose>
+        <pose>26.0 0 3.05 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>10.6</length>
+              <length>12.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -493,7 +493,7 @@
           <geometry>
             <cylinder>
               <radius>0.14</radius>
-              <length>10.6</length>
+              <length>12.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -505,12 +505,12 @@
 
       <!-- Vertical risers connecting pipe levels. -->
       <link name="north_riser_west_1">
-        <pose>-19.5 7.8 2.55 0 0 0</pose>
+        <pose>-27.5 7.8 3.65 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.2</length>
+              <length>4.4</length>
             </cylinder>
           </geometry>
         </collision>
@@ -518,7 +518,7 @@
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.2</length>
+              <length>4.4</length>
             </cylinder>
           </geometry>
           <material>
@@ -529,12 +529,12 @@
       </link>
 
       <link name="north_riser_west_2">
-        <pose>-15.0 8.35 2.9 0 0 0</pose>
+        <pose>-21.0 8.35 4.35 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.11</radius>
-              <length>2.9</length>
+              <length>5.8</length>
             </cylinder>
           </geometry>
         </collision>
@@ -542,7 +542,7 @@
           <geometry>
             <cylinder>
               <radius>0.11</radius>
-              <length>2.9</length>
+              <length>5.8</length>
             </cylinder>
           </geometry>
           <material>
@@ -553,12 +553,12 @@
       </link>
 
       <link name="north_riser_center">
-        <pose>0.0 7.35 2.75 0 0 0</pose>
+        <pose>0.0 7.35 4.05 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.15</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
         </collision>
@@ -566,7 +566,7 @@
           <geometry>
             <cylinder>
               <radius>0.15</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
           <material>
@@ -577,12 +577,12 @@
       </link>
 
       <link name="north_riser_east_1">
-        <pose>15.0 8.0 2.75 0 0 0</pose>
+        <pose>21.0 8.0 4.05 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
         </collision>
@@ -590,7 +590,7 @@
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
           <material>
@@ -601,12 +601,12 @@
       </link>
 
       <link name="north_riser_east_2">
-        <pose>20.5 7.55 2.75 0 0 0</pose>
+        <pose>28.5 7.55 4.05 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>2.7</length>
+              <length>5.4</length>
             </cylinder>
           </geometry>
         </collision>
@@ -614,7 +614,7 @@
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>2.7</length>
+              <length>5.4</length>
             </cylinder>
           </geometry>
           <material>
@@ -625,12 +625,12 @@
       </link>
 
       <link name="south_riser_west_1">
-        <pose>-19.5 -7.8 2.55 0 0 0</pose>
+        <pose>-27.5 -7.8 3.65 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.2</length>
+              <length>4.4</length>
             </cylinder>
           </geometry>
         </collision>
@@ -638,7 +638,7 @@
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.2</length>
+              <length>4.4</length>
             </cylinder>
           </geometry>
           <material>
@@ -649,12 +649,12 @@
       </link>
 
       <link name="south_riser_west_2">
-        <pose>-15.0 -8.35 2.9 0 0 0</pose>
+        <pose>-21.0 -8.35 4.35 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.11</radius>
-              <length>2.9</length>
+              <length>5.8</length>
             </cylinder>
           </geometry>
         </collision>
@@ -662,7 +662,7 @@
           <geometry>
             <cylinder>
               <radius>0.11</radius>
-              <length>2.9</length>
+              <length>5.8</length>
             </cylinder>
           </geometry>
           <material>
@@ -673,12 +673,12 @@
       </link>
 
       <link name="south_riser_center">
-        <pose>0.0 -7.35 2.75 0 0 0</pose>
+        <pose>0.0 -7.35 4.05 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.15</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
         </collision>
@@ -686,7 +686,7 @@
           <geometry>
             <cylinder>
               <radius>0.15</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
           <material>
@@ -697,12 +697,12 @@
       </link>
 
       <link name="south_riser_east_1">
-        <pose>15.0 -8.0 2.75 0 0 0</pose>
+        <pose>21.0 -8.0 4.05 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
         </collision>
@@ -710,7 +710,7 @@
           <geometry>
             <cylinder>
               <radius>0.13</radius>
-              <length>2.6</length>
+              <length>5.2</length>
             </cylinder>
           </geometry>
           <material>
@@ -721,12 +721,12 @@
       </link>
 
       <link name="south_riser_east_2">
-        <pose>20.5 -7.55 2.75 0 0 0</pose>
+        <pose>28.5 -7.55 4.05 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>2.7</length>
+              <length>5.4</length>
             </cylinder>
           </geometry>
         </collision>
@@ -734,7 +734,7 @@
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>2.7</length>
+              <length>5.4</length>
             </cylinder>
           </geometry>
           <material>
@@ -749,18 +749,18 @@
       <static>true</static>
 
       <link name="north_support_west">
-        <pose>-20 7.85 1.55 0 0 0</pose>
+        <pose>-28 7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -771,18 +771,18 @@
       </link>
 
       <link name="north_support_midwest">
-        <pose>-10 7.85 1.55 0 0 0</pose>
+        <pose>-14 7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -793,18 +793,18 @@
       </link>
 
       <link name="north_support_center">
-        <pose>0 7.85 1.55 0 0 0</pose>
+        <pose>0 7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -815,18 +815,18 @@
       </link>
 
       <link name="north_support_mideast">
-        <pose>10 7.85 1.55 0 0 0</pose>
+        <pose>14 7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -837,18 +837,18 @@
       </link>
 
       <link name="north_support_east">
-        <pose>20 7.85 1.55 0 0 0</pose>
+        <pose>28 7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -859,18 +859,18 @@
       </link>
 
       <link name="south_support_west">
-        <pose>-20 -7.85 1.55 0 0 0</pose>
+        <pose>-28 -7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -881,18 +881,18 @@
       </link>
 
       <link name="south_support_midwest">
-        <pose>-10 -7.85 1.55 0 0 0</pose>
+        <pose>-14 -7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -903,18 +903,18 @@
       </link>
 
       <link name="south_support_center">
-        <pose>0 -7.85 1.55 0 0 0</pose>
+        <pose>0 -7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -925,18 +925,18 @@
       </link>
 
       <link name="south_support_mideast">
-        <pose>10 -7.85 1.55 0 0 0</pose>
+        <pose>14 -7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -947,18 +947,18 @@
       </link>
 
       <link name="south_support_east">
-        <pose>20 -7.85 1.55 0 0 0</pose>
+        <pose>28 -7.85 3.1 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>0.28 1.8 3.1</size>
+              <size>0.28 1.8 6.2</size>
             </box>
           </geometry>
           <material>
@@ -969,18 +969,18 @@
       </link>
 
       <link name="north_catwalk">
-        <pose>0 6.45 3.05 0 0 0</pose>
+        <pose>0 6.45 4.65 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>42 0.75 0.10</size>
+              <size>56 0.75 0.10</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>42 0.75 0.10</size>
+              <size>56 0.75 0.10</size>
             </box>
           </geometry>
           <material>
@@ -991,18 +991,18 @@
       </link>
 
       <link name="south_catwalk">
-        <pose>0 -6.45 3.05 0 0 0</pose>
+        <pose>0 -6.45 4.65 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <box>
-              <size>42 0.75 0.10</size>
+              <size>56 0.75 0.10</size>
             </box>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
             <box>
-              <size>42 0.75 0.10</size>
+              <size>56 0.75 0.10</size>
             </box>
           </geometry>
           <material>
@@ -1017,7 +1017,7 @@
       <static>true</static>
 
       <link name="tank_northwest">
-        <pose>-15 12.0 2.0 0 0 0</pose>
+        <pose>-22 16.0 2.0 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
@@ -1041,7 +1041,7 @@
       </link>
 
       <link name="tank_northeast">
-        <pose>14.5 12.0 2.35 0 0 0</pose>
+        <pose>22 16.0 2.35 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
@@ -1065,7 +1065,7 @@
       </link>
 
       <link name="tank_southwest">
-        <pose>-14.5 -12.0 2.2 0 0 0</pose>
+        <pose>-22 -16.0 2.2 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
@@ -1089,7 +1089,7 @@
       </link>
 
       <link name="tank_southeast">
-        <pose>15.5 -12.0 1.8 0 0 0</pose>
+        <pose>22 -16.0 1.8 0 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
@@ -1113,7 +1113,7 @@
       </link>
 
       <link name="pump_skid_west">
-        <pose>-22.0 -2.8 0.45 0 0 0.08</pose>
+        <pose>-30.0 -3.6 0.45 0 0 0.08</pose>
         <collision name="collision">
           <geometry>
             <box>
@@ -1135,7 +1135,7 @@
       </link>
 
       <link name="pump_skid_east">
-        <pose>22.0 2.8 0.45 0 0 -0.08</pose>
+        <pose>30.0 3.6 0.45 0 0 -0.08</pose>
         <collision name="collision">
           <geometry>
             <box>
@@ -1157,7 +1157,7 @@
       </link>
 
       <link name="inspection_marker_1">
-        <pose>-15 10.42 2.85 0 0 0</pose>
+        <pose>-22 14.42 2.85 0 0 0</pose>
         <visual name="visual">
           <geometry>
             <sphere>
@@ -1172,7 +1172,7 @@
       </link>
 
       <link name="inspection_marker_2">
-        <pose>14.5 10.08 3.25 0 0 0</pose>
+        <pose>22 14.08 3.25 0 0 0</pose>
         <visual name="visual">
           <geometry>
             <sphere>
@@ -1187,7 +1187,7 @@
       </link>
 
       <link name="inspection_marker_3">
-        <pose>15.5 -10.45 2.4 0 0 0</pose>
+        <pose>22 -14.45 2.4 0 0 0</pose>
         <visual name="visual">
           <geometry>
             <sphere>
@@ -1206,12 +1206,12 @@
       <static>true</static>
 
       <link name="west_low_branch">
-        <pose>-22.0 0 1.1 1.5708 0 0</pose>
+        <pose>-30.0 0 1.1 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>9.0</length>
+              <length>13.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -1219,7 +1219,7 @@
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>9.0</length>
+              <length>13.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -1230,12 +1230,12 @@
       </link>
 
       <link name="west_mid_branch">
-        <pose>-21.4 0 2.0 1.5708 0 0</pose>
+        <pose>-29.2 0 2.9 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>11.0</length>
+              <length>15.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -1243,7 +1243,7 @@
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>11.0</length>
+              <length>15.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -1254,12 +1254,12 @@
       </link>
 
       <link name="east_low_branch">
-        <pose>22.0 0 1.1 1.5708 0 0</pose>
+        <pose>30.0 0 1.1 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>9.0</length>
+              <length>13.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -1267,7 +1267,7 @@
           <geometry>
             <cylinder>
               <radius>0.12</radius>
-              <length>9.0</length>
+              <length>13.0</length>
             </cylinder>
           </geometry>
           <material>
@@ -1278,12 +1278,12 @@
       </link>
 
       <link name="east_mid_branch">
-        <pose>21.4 0 2.0 1.5708 0 0</pose>
+        <pose>29.2 0 2.9 1.5708 0 0</pose>
         <collision name="collision">
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>11.0</length>
+              <length>15.0</length>
             </cylinder>
           </geometry>
         </collision>
@@ -1291,7 +1291,7 @@
           <geometry>
             <cylinder>
               <radius>0.10</radius>
-              <length>11.0</length>
+              <length>15.0</length>
             </cylinder>
           </geometry>
           <material>

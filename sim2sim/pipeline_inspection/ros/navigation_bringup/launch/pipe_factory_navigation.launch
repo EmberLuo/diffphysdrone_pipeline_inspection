@@ -8,6 +8,10 @@
   <arg name="target_speed" default="1.0"/>
   <arg name="lookahead_distance" default="2.0"/>
   <arg name="default_goal_z" default="1.8"/>
+  <arg name="planner_resolution" default="0.25"/>
+  <arg name="planner_search_step" default="0.5"/>
+  <arg name="planner_obstacles_inflation" default="0.45"/>
+  <arg name="planner_pcd_leaf_size" default="0.25"/>
   <arg name="net_weight" default="$(arg repo_root)/../../training_code/logs/depth_camera/single_agent_odom/20260504_122043_dob_hover_dp_depth_odom/checkpoint0004.pth"/>
   <arg name="publish_to_px4" default="true"/>
 
@@ -22,6 +26,10 @@
     <arg name="target_speed" value="$(arg target_speed)"/>
     <arg name="lookahead_distance" value="$(arg lookahead_distance)"/>
     <arg name="default_goal_z" value="$(arg default_goal_z)"/>
+    <arg name="planner_resolution" value="$(arg planner_resolution)"/>
+    <arg name="planner_search_step" value="$(arg planner_search_step)"/>
+    <arg name="planner_obstacles_inflation" value="$(arg planner_obstacles_inflation)"/>
+    <arg name="planner_pcd_leaf_size" value="$(arg planner_pcd_leaf_size)"/>
     <arg name="net_weight" value="$(arg net_weight)"/>
     <arg name="publish_to_px4" value="$(arg publish_to_px4)"/>
   </include>
