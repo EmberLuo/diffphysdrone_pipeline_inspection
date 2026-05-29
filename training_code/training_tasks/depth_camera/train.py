@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_LOG_ROOT = ROOT / "logs" / "depth_camera"
 CONFIG_DIR = Path(__file__).resolve().parent / "configs"
 AUTO_ROBUST_CONFIGS = {
+    "--use_rth_normal": CONFIG_DIR / "rth_normal.args",
     "--use_robust_env": CONFIG_DIR / "robust_baseline.args",
     "--use_robust_target_hover": CONFIG_DIR / "robust_target_hover.args",
 }
@@ -28,6 +29,8 @@ def _read_args_file(path: Path) -> list[str]:
 
 def _select_auto_config(argv: list[str]) -> Path | None:
     options = {arg.split("=", 1)[0] for arg in argv}
+    if "--use_rth_normal" in options:
+        return AUTO_ROBUST_CONFIGS["--use_rth_normal"]
     if "--use_robust_target_hover" in options:
         return AUTO_ROBUST_CONFIGS["--use_robust_target_hover"]
     if "--use_robust_env" in options:

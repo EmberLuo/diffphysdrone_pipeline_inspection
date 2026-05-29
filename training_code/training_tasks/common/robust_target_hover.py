@@ -36,6 +36,7 @@ def add_robust_target_hover_args(parser: argparse.ArgumentParser) -> None:
         parser.set_defaults(**{name: default})
 
     add_bool("use_robust_target_hover", False)
+    add_bool("use_rth_normal", False)
     add_bool("use_robust_env", False)
 
     add_bool("use_wind", False)
@@ -50,6 +51,16 @@ def add_robust_target_hover_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--wind_side_range", type=float, nargs="+", default=[0.0, 0.0])
     parser.add_argument("--wind_update_interval", type=int, default=8)
     parser.add_argument("--wind_randomize_prob", type=float, default=1.0)
+    add_bool("use_wind_curriculum", False)
+    parser.add_argument("--wind_curriculum_start", type=float, default=0.0)
+    parser.add_argument("--wind_curriculum_end", type=float, default=0.6)
+    parser.add_argument("--wind_curriculum_min_scale", type=float, default=0.0)
+    parser.add_argument("--wind_curriculum_max_scale", type=float, default=1.0)
+    parser.add_argument("--wind_curriculum_curve", default="linear", choices=["linear", "cosine"])
+
+    add_bool("randomize_start_target_z", False)
+    parser.add_argument("--start_target_z_range", type=float, nargs="+", default=[])
+    parser.add_argument("--start_target_z_margin", type=float, default=0.3)
 
     add_bool("use_localization_noise", False)
     parser.add_argument("--pos_noise_std_range", type=float, nargs="+", default=[0.0, 0.0])
@@ -67,6 +78,10 @@ def add_robust_target_hover_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--safe_margin_k_pos_uncertainty", type=float, default=1.0)
     parser.add_argument("--safe_margin_k_wind", type=float, default=0.05)
     parser.add_argument("--corridor_softplus_sigma", type=float, default=0.2)
+    add_bool("use_map_bounds_safety", False)
+    parser.add_argument("--lambda_bounds", type=float, default=0.0)
+    parser.add_argument("--map_bounds_range", type=float, nargs="+", default=[])
+    parser.add_argument("--map_bounds_padding", type=float, default=1.0)
 
     add_bool("use_hover_loss", False)
     parser.add_argument("--lambda_hover", type=float, default=0.0)
@@ -123,7 +138,7 @@ def load_yaml_defaults(config_path: str | Path | None) -> dict[str, Any]:
 
 
 def is_enabled(args: argparse.Namespace) -> bool:
-    return bool(getattr(args, "use_robust_target_hover", False))
+    return bool(getattr(args, "use_robust_target_hover", False) or getattr(args, "use_rth_normal", False))
 
 
 def is_environment_enabled(args: argparse.Namespace) -> bool:
@@ -134,13 +149,22 @@ def is_dob_enabled(args: argparse.Namespace) -> bool:
     return _flag(args, "use_dob_hover_observer") or _flag(args, "use_dob_hover_compensation")
 
 
-def reset(env: Any, args: argparse.Namespace) -> None:
+def reset(
+    env: Any,
+    args: argparse.Namespace,
+    *,
+    iteration: int | None = None,
+    num_iters: int | None = None,
+) -> None:
     if not is_environment_enabled(args):
         return
 
     B = env.batch_size
     device = env.device
     dtype = env.p.dtype
+
+    if _flag(args, "randomize_start_target_z"):
+        _randomize_start_target_z(env, args)
 
     if _flag(args, "use_localization_noise") or _flag(args, "use_dynamic_safety_margin") or _flag(args, "use_uncertainty_loss"):
         env.localization_sigma = _sample_uniform(args.sigma_p_range, B, 1, device, dtype).squeeze(-1).clamp_min(0.0)
@@ -155,18 +179,28 @@ def reset(env: Any, args: argparse.Namespace) -> None:
         env.vel_noise_std = torch.zeros(B, device=device, dtype=dtype)
 
     if _flag(args, "use_wind"):
-        env.v_wind = _sample_wind(args, env)
+        env.wind_curriculum_scale = _wind_curriculum_scale(args, iteration, num_iters)
+        env.v_wind = _sample_wind(args, env, scale=env.wind_curriculum_scale)
     else:
+        env.wind_curriculum_scale = 0.0
         env.v_wind = torch.zeros_like(env.v_wind)
 
 
-def maybe_update_wind(env: Any, args: argparse.Namespace, step: int) -> None:
+def maybe_update_wind(
+    env: Any,
+    args: argparse.Namespace,
+    step: int,
+    *,
+    iteration: int | None = None,
+    num_iters: int | None = None,
+) -> None:
     if not is_environment_enabled(args) or not _flag(args, "use_wind"):
         return
     mode = _wind_mode(args)
     interval = max(1, int(getattr(args, "wind_update_interval", 1)))
     if mode in {"gust", "mixed"} and step > 0 and step % interval == 0:
-        env.v_wind = _sample_wind(args, env)
+        env.wind_curriculum_scale = _wind_curriculum_scale(args, iteration, num_iters)
+        env.v_wind = _sample_wind(args, env, scale=env.wind_curriculum_scale)
 
 
 def state_from_env(
@@ -364,6 +398,13 @@ def compute_loss(
     if not _flag(args, "use_dynamic_safety_margin"):
         corridor_loss_i = torch.zeros_like(original_i)
 
+    bounds_min, bounds_max = _map_bounds_for_batch(env, args, p_history[0], target_goal)
+    bounds_violation = torch.maximum(bounds_min[None] - p_history, p_history - bounds_max[None]).clamp_min(0.0)
+    bounds_violation_norm = torch.norm(bounds_violation, p=2, dim=-1)
+    bounds_loss_i = bounds_violation.pow(2).sum(-1).mean(0)
+    if not _flag(args, "use_map_bounds_safety"):
+        bounds_loss_i = torch.zeros_like(original_i)
+
     uncertainty_loss_i = sigma_p.pow(2) * v_history.norm(p=2, dim=-1).pow(2).mean(0)
     if not _flag(args, "use_uncertainty_loss"):
         uncertainty_loss_i = torch.zeros_like(original_i)
@@ -379,6 +420,7 @@ def compute_loss(
     total_i = (
         float(args.lambda_original) * original_i
         + float(args.lambda_corridor) * corridor_loss_i
+        + float(args.lambda_bounds) * bounds_loss_i
         + float(args.lambda_hover) * hover_loss_i
         + float(args.lambda_uncertainty) * uncertainty_loss_i
         + float(args.lambda_margin) * margin_loss_i
@@ -394,7 +436,9 @@ def compute_loss(
         final_loss = mean_loss
 
     safety_margin_violation_count = (corridor_violation > 0).float().sum()
-    safety_success = torch.all(distance.flatten(0, 1) > 0, dim=0)
+    obstacle_success = torch.all(distance.flatten(0, 1) > 0, dim=0)
+    bounds_success = torch.all(bounds_violation_norm <= 0, dim=0)
+    safety_success = obstacle_success & bounds_success if _flag(args, "use_map_bounds_safety") else obstacle_success
     goal_error = torch.norm(target_errors, p=2, dim=-1)
     final_goal_error = goal_error[-1]
     min_goal_error = goal_error.amin(dim=0)
@@ -404,22 +448,36 @@ def compute_loss(
     hover_success = (hover_position_error_i < goal_radius) & (hover_velocity_error_i < 0.5)
     target_hover_success = safety_success & goal_success & hover_success
     success = target_hover_success if _flag(args, "use_hover_loss") else safety_success
+    start_z = getattr(env, "rth_start_z", p_history[0, :, 2])
+    target_z = getattr(env, "rth_target_z", target_goal[:, 2])
 
     metrics = {
         "loss/total": final_loss.detach(),
         "loss/original": original_i.mean().detach(),
         "loss/corridor": corridor_loss_i.mean().detach(),
+        "loss/map_bounds": bounds_loss_i.mean().detach(),
         "loss/hover": hover_loss_i.mean().detach(),
         "loss/uncertainty": uncertainty_loss_i.mean().detach(),
         "loss/control_margin": margin_loss_i.mean().detach(),
         "loss/cvar": cvar_loss.detach(),
         "safety/min_obstacle_distance": obstacle_distance.mean().detach(),
         "safety/margin_violation_count": safety_margin_violation_count.detach(),
+        "safety/map_bounds": bounds_success.float().mean().detach(),
+        "safety/out_of_bounds_rate": (bounds_violation_norm > 0).float().mean().detach(),
+        "safety/max_bounds_violation": bounds_violation_norm.amax().detach(),
         "hover/position_error": hover_pos_error.mean().detach(),
         "hover/velocity_error": hover_vel_error.mean().detach(),
         "goal/final_error": final_goal_error.mean().detach(),
         "goal/min_error": min_goal_error.mean().detach(),
+        "goal/start_z": start_z.mean().detach(),
+        "goal/target_z": target_z.mean().detach(),
+        "goal/z_delta_abs": torch.abs(target_z - start_z).mean().detach(),
         "disturbance/wind_norm": wind_norm_t.mean().detach(),
+        "disturbance/wind_curriculum_scale": torch.as_tensor(
+            getattr(env, "wind_curriculum_scale", 1.0),
+            device=p_history.device,
+            dtype=p_history.dtype,
+        ).detach(),
         "localization/sigma": sigma_p.mean().detach(),
         "control/saturation_ratio": (control_norm > margin_threshold).float().mean().detach(),
         "success/safety": safety_success.float().mean().detach(),
@@ -562,7 +620,156 @@ def _uses_velocity_noise(env: Any, args: argparse.Namespace) -> bool:
     return is_environment_enabled(args) and _flag(args, "use_localization_noise") and getattr(env, "vel_noise_std", None) is not None
 
 
-def _sample_wind(args: argparse.Namespace, env: Any) -> torch.Tensor:
+def _randomize_start_target_z(env: Any, args: argparse.Namespace) -> None:
+    B = env.batch_size
+    device = env.device
+    dtype = env.p.dtype
+    z_min, z_max = _start_target_z_bounds(env, args, device, dtype)
+    z_samples = torch.empty(B, 2, device=device, dtype=dtype).uniform_(z_min, z_max)
+
+    env.p = env.p.clone()
+    env.p_target = env.p_target.clone()
+    env.p[:, 2] = z_samples[:, 0]
+    env.p_target[:, 2] = z_samples[:, 1]
+    env.p_old = env.p.clone()
+    env.rth_start_z = z_samples[:, 0].detach()
+    env.rth_target_z = z_samples[:, 1].detach()
+    _reorient_toward_target(env)
+
+
+def _start_target_z_bounds(
+    env: Any,
+    args: argparse.Namespace,
+    device: torch.device,
+    dtype: torch.dtype,
+) -> tuple[float, float]:
+    explicit_range = _as_float_list(getattr(args, "start_target_z_range", []))
+    if explicit_range:
+        if len(explicit_range) != 2:
+            raise ValueError("--start_target_z_range expects exactly two values: min max")
+        z_min, z_max = explicit_range
+    else:
+        z_min, z_max = _infer_training_map_z_bounds(env, device, dtype)
+
+    margin = max(0.0, float(getattr(args, "start_target_z_margin", 0.0)))
+    z_min = float(z_min) + margin
+    z_max = float(z_max) - margin
+    if z_min >= z_max:
+        raise ValueError(
+            f"Invalid start/target z range after margin: [{z_min}, {z_max}]. "
+            "Reduce --start_target_z_margin or provide a wider --start_target_z_range."
+        )
+    return z_min, z_max
+
+
+def _infer_training_map_z_bounds(env: Any, device: torch.device, dtype: torch.dtype) -> tuple[float, float]:
+    bounds: list[tuple[float, float]] = []
+    for base_attr, width_attr in (("ball_b", "ball_w"), ("voxel_b", "voxel_w")):
+        base = getattr(env, base_attr, None)
+        width = getattr(env, width_attr, None)
+        if base is None or width is None or len(base) <= 2 or len(width) <= 2:
+            continue
+        base_t = torch.as_tensor(base, device=device, dtype=dtype)
+        width_t = torch.as_tensor(width, device=device, dtype=dtype)
+        bounds.append((float(base_t[2]), float(base_t[2] + width_t[2])))
+
+    if not bounds:
+        return -1.0, 5.0
+    return min(lo for lo, _ in bounds), max(hi for _, hi in bounds)
+
+
+def _map_bounds_for_batch(
+    env: Any,
+    args: argparse.Namespace,
+    p_start: torch.Tensor,
+    p_target: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    explicit_bounds = _as_float_list(getattr(args, "map_bounds_range", []))
+    B = p_start.shape[0]
+    device = p_start.device
+    dtype = p_start.dtype
+    padding = max(0.0, float(getattr(args, "map_bounds_padding", 0.0)))
+    if explicit_bounds:
+        if len(explicit_bounds) != 6:
+            raise ValueError("--map_bounds_range expects six values: xmin xmax ymin ymax zmin zmax")
+        bounds = torch.tensor(explicit_bounds, device=device, dtype=dtype).reshape(3, 2)
+        bounds_min = bounds[:, 0][None].expand(B, 3).clone()
+        bounds_max = bounds[:, 1][None].expand(B, 3).clone()
+    else:
+        bounds_min, bounds_max = _infer_map_bounds_for_batch(env, p_start, p_target)
+
+    bounds_min = bounds_min - padding
+    bounds_max = bounds_max + padding
+    if torch.any(bounds_min >= bounds_max):
+        raise ValueError(f"Invalid map bounds after padding: min={bounds_min[0].tolist()}, max={bounds_max[0].tolist()}")
+    return bounds_min, bounds_max
+
+
+def _infer_map_bounds_for_batch(
+    env: Any,
+    p_start: torch.Tensor,
+    p_target: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    B = p_start.shape[0]
+    device = p_start.device
+    dtype = p_start.dtype
+    group_index = _obstacle_group_index(env, B, device)
+
+    x_items = [p_start[:, 0], p_target[:, 0]]
+    y_items = [p_start[:, 1], p_target[:, 1]]
+    for attr in ("balls", "voxels", "cyl", "cyl_h"):
+        obj = getattr(env, attr, None)
+        if obj is None or obj.numel() == 0:
+            continue
+        obj_b = obj.index_select(0, group_index).to(device=device, dtype=dtype)
+        x_items.append(obj_b[..., 0].amin(dim=1))
+        x_items.append(obj_b[..., 0].amax(dim=1))
+        if attr != "cyl_h" and obj_b.shape[-1] > 1:
+            y_items.append(obj_b[..., 1].amin(dim=1))
+            y_items.append(obj_b[..., 1].amax(dim=1))
+
+    z_min, z_max = _infer_training_map_z_bounds(env, device, dtype)
+    z_lo = torch.minimum(torch.minimum(p_start[:, 2], p_target[:, 2]), torch.full((B,), z_min, device=device, dtype=dtype))
+    z_hi = torch.maximum(torch.maximum(p_start[:, 2], p_target[:, 2]), torch.full((B,), z_max, device=device, dtype=dtype))
+    bounds_min = torch.stack([torch.stack(x_items, dim=0).amin(dim=0), torch.stack(y_items, dim=0).amin(dim=0), z_lo], dim=-1)
+    bounds_max = torch.stack([torch.stack(x_items, dim=0).amax(dim=0), torch.stack(y_items, dim=0).amax(dim=0), z_hi], dim=-1)
+    return bounds_min, bounds_max
+
+
+def _obstacle_group_index(env: Any, B: int, device: torch.device) -> torch.Tensor:
+    n_drones_per_group = max(1, int(getattr(env, "n_drones_per_group", 1)))
+    group_index = torch.arange(B, device=device)
+    group_index = group_index // n_drones_per_group * n_drones_per_group
+    return group_index.clamp_max(B - 1)
+
+
+def _reorient_toward_target(env: Any) -> None:
+    if not all(hasattr(env, name) for name in ("R", "R_old", "act", "g_std", "p", "p_target")):
+        return
+
+    target_dir = env.p_target - env.p
+    target_dir = target_dir + torch.randn_like(target_dir) * 0.2
+    up = F.normalize(env.act - env.g_std, p=2, dim=-1, eps=1e-6)
+    forward_raw = target_dir - torch.sum(target_dir * up, dim=-1, keepdim=True) * up
+    fallback_forward = torch.zeros_like(forward_raw)
+    fallback_forward[:, 0] = 1.0
+    fallback_forward_alt = torch.zeros_like(forward_raw)
+    fallback_forward_alt[:, 1] = 1.0
+    fallback_forward = torch.where(
+        torch.abs(torch.sum(fallback_forward * up, dim=-1, keepdim=True)) < 0.9,
+        fallback_forward,
+        fallback_forward_alt,
+    )
+    fallback_forward = fallback_forward - torch.sum(fallback_forward * up, dim=-1, keepdim=True) * up
+    forward_raw_norm = torch.norm(forward_raw, p=2, dim=-1, keepdim=True)
+    forward_raw = torch.where(forward_raw_norm > 1e-6, forward_raw, fallback_forward)
+    forward = F.normalize(forward_raw, p=2, dim=-1, eps=1e-6)
+    left = F.normalize(torch.cross(up, forward, dim=-1), p=2, dim=-1, eps=1e-6)
+    env.R = torch.stack([forward, left, up], dim=-1)
+    env.R_old = env.R.clone()
+
+
+def _sample_wind(args: argparse.Namespace, env: Any, *, scale: float | None = None) -> torch.Tensor:
     B = env.batch_size
     device = env.device
     dtype = env.v.dtype
@@ -580,7 +787,39 @@ def _sample_wind(args: argparse.Namespace, env: Any) -> torch.Tensor:
     if prob < 1.0:
         mask = torch.rand(B, device=device) < prob
         wind = torch.where(mask[:, None], wind, torch.zeros_like(wind))
+    if scale is None:
+        scale = _wind_curriculum_scale(args)
+    wind = wind * float(scale)
     return wind
+
+
+def _wind_curriculum_scale(
+    args: argparse.Namespace,
+    iteration: int | None = None,
+    num_iters: int | None = None,
+) -> float:
+    if not _flag(args, "use_wind_curriculum"):
+        return 1.0
+
+    if iteration is None or num_iters is None or num_iters <= 1:
+        progress = 0.0
+    else:
+        progress = float(iteration) / float(max(1, num_iters - 1))
+
+    start = float(getattr(args, "wind_curriculum_start", 0.0))
+    end = float(getattr(args, "wind_curriculum_end", 1.0))
+    if end <= start:
+        phase = 1.0 if progress >= end else 0.0
+    else:
+        phase = (progress - start) / (end - start)
+        phase = min(1.0, max(0.0, phase))
+
+    if str(getattr(args, "wind_curriculum_curve", "linear")).lower() == "cosine":
+        phase = 0.5 - 0.5 * math.cos(math.pi * phase)
+
+    min_scale = float(getattr(args, "wind_curriculum_min_scale", 0.0))
+    max_scale = float(getattr(args, "wind_curriculum_max_scale", 1.0))
+    return min_scale + (max_scale - min_scale) * phase
 
 
 def _sample_signed_component(value: Any, B: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor:

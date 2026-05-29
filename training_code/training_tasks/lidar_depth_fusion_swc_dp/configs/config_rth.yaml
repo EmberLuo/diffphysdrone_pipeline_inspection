@@ -36,6 +36,13 @@ wind_vertical_range: [0.0, 0.45]
 wind_side_range: [0.4, 1.8]
 wind_update_interval: 8
 wind_randomize_prob: 0.85
+use_wind_curriculum: true
+wind_curriculum_start: 0.0
+wind_curriculum_end: 0.6
+wind_curriculum_min_scale: 0.0
+wind_curriculum_max_scale: 1.0
+wind_curriculum_curve: cosine
+randomize_start_target_z: true
 
 use_localization_noise: true
 pos_noise_std_range: [0.02, 0.18]
@@ -51,6 +58,9 @@ safe_margin_extra: 0.1
 safe_margin_k_pos_uncertainty: 1.0
 safe_margin_k_wind: 0.05
 corridor_softplus_sigma: 0.2
+use_map_bounds_safety: true
+lambda_bounds: 1.0
+map_bounds_padding: 1.0
 
 use_hover_loss: true
 lambda_hover: 0.75

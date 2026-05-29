@@ -109,18 +109,69 @@ def _make_run_dir(args: argparse.Namespace, task: TrainingTask) -> Path:
     if not args.log_root:
         args.log_root = str(task.default_log_root)
 
-    experiment_name = args.experiment_name or default_experiment_name(args)
+    log_root = _classified_log_root(Path(args.log_root), task)
+    experiment_name = args.experiment_name or default_experiment_name(args, task)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     run_dir_name = f"{timestamp}_{args.run_name}" if args.run_name else timestamp
-    run_dir = Path(args.log_root) / experiment_name / run_dir_name
+    run_dir = log_root / experiment_name / run_dir_name
     run_dir.mkdir(parents=True, exist_ok=False)
+    args.log_sensor = task.name
+    args.log_algorithm = _training_algorithm(args)
+    args.log_environment = _training_environment(args)
+    args.log_task = _training_task(args)
+    args.resolved_log_root = str(log_root)
+    args.resolved_experiment_name = experiment_name
+    args.resolved_run_dir = str(run_dir)
     return run_dir
 
 
-def default_experiment_name(args: argparse.Namespace) -> str:
+def _classified_log_root(log_root: Path, task: TrainingTask) -> Path:
+    if log_root.name == task.name:
+        return log_root
+    return log_root / task.name
+
+
+def default_experiment_name(args: argparse.Namespace, task: TrainingTask) -> str:
+    algorithm = _training_algorithm(args)
+    environment = _training_environment(args)
+    training_task = _training_task(args)
     agent_mode = "single_agent" if args.single else "multi_agent"
     odom_mode = "no_odom" if args.no_odom else "odom"
-    return f"{agent_mode}_{odom_mode}"
+    return str(Path(algorithm) / environment / training_task / f"{agent_mode}_{odom_mode}")
+
+
+def _training_algorithm(args: argparse.Namespace) -> str:
+    if robust_target_hover.is_enabled(args):
+        return "rth"
+    return "diffphys"
+
+
+def _training_environment(args: argparse.Namespace) -> str:
+    if bool(getattr(args, "use_wind", False)):
+        if bool(getattr(args, "use_wind_curriculum", False)):
+            return "strong_wind_curriculum"
+        return "strong_wind"
+    if _has_non_wind_robust_perturbation(args):
+        return "robust_env"
+    return "nominal"
+
+
+def _has_non_wind_robust_perturbation(args: argparse.Namespace) -> bool:
+    return any(
+        bool(getattr(args, name, False))
+        for name in (
+            "use_localization_noise",
+            "randomize_start_target_z",
+        )
+    )
+
+
+def _training_task(args: argparse.Namespace) -> str:
+    if robust_target_hover.is_enabled(args):
+        return "target_hover"
+    if robust_target_hover.is_environment_enabled(args):
+        return "random_target"
+    return "navigation"
 
 
 def _target_hover_diagnostics(
@@ -233,7 +284,7 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
         for i in pbar:
             env.reset()
             if robust_env_enabled:
-                robust_target_hover.reset(env, args)
+                robust_target_hover.reset(env, args, iteration=i, num_iters=args.num_iters)
             dob_state = robust_target_hover.init_dob_state(env, args)
             model.reset()
             p_history = []
@@ -271,7 +322,7 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
             for t in range(args.timesteps):
                 ctl_dt = normalvariate(1 / 15, 0.1 / 15)
                 if robust_env_enabled:
-                    robust_target_hover.maybe_update_wind(env, args, t)
+                    robust_target_hover.maybe_update_wind(env, args, t, iteration=i, num_iters=args.num_iters)
                 obs = task.make_observation(env, args, ctl_dt)
                 p_history.append(env.p)
                 vec_to_pt_history.append(env.find_vec_to_nearest_pt())
