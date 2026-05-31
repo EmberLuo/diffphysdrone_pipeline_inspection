@@ -55,7 +55,7 @@ sim2sim/pipeline_inspection/integration_ws/
 
 # Third-party code and packaged simulator binaries
 sim2sim/pipeline_inspection/third_party/
-sim2sim/drone_airsim/swarm/LinuxNoEditor/
+sim2sim/drone_airsim/**/LinuxNoEditor/
 
 # Sim2sim experiment, debug, and validation outputs
 thesis_outputs/

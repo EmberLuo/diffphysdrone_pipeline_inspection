@@ -18,6 +18,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 from training_code.training_tasks.common import robust_target_hover
+from training_code.training_tasks.common.scene_visualization import log_training_scene_snapshot
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,12 @@ def add_common_args(parser: argparse.ArgumentParser, default_log_root: str | Pat
     parser.add_argument("--experiment_name", default=None)
     parser.add_argument("--run_name", default="")
     parser.add_argument("--save_every", type=int, default=10000)
+    parser.add_argument(
+        "--log_scene_snapshots",
+        default=False,
+        action="store_true",
+        help="log third-person scene and onboard depth-camera snapshots to TensorBoard",
+    )
     robust_target_hover.add_robust_target_hover_args(parser)
 
 
@@ -151,17 +158,16 @@ def _training_environment(args: argparse.Namespace) -> str:
         if bool(getattr(args, "use_wind_curriculum", False)):
             return "strong_wind_curriculum"
         return "strong_wind"
-    if _has_non_wind_robust_perturbation(args):
+    if _has_non_wind_environment_perturbation(args):
         return "robust_env"
     return "nominal"
 
 
-def _has_non_wind_robust_perturbation(args: argparse.Namespace) -> bool:
+def _has_non_wind_environment_perturbation(args: argparse.Namespace) -> bool:
     return any(
         bool(getattr(args, name, False))
         for name in (
             "use_localization_noise",
-            "randomize_start_target_z",
         )
     )
 
@@ -205,7 +211,6 @@ def _target_hover_diagnostics(
         "success/goal": goal_success.float().mean(),
         "success/hover": hover_success.float().mean(),
     }
-
 
 
 def _log_figures(
@@ -445,6 +450,8 @@ def run_training(args: argparse.Namespace, task: TrainingTask) -> Path:
 
                 if is_save_iter(i):
                     _log_figures(writer, i + 1, sample_idx, p_history_t, v_history_t, act_buffer_t)
+                    if args.log_scene_snapshots:
+                        log_training_scene_snapshot(writer, i + 1, sample_idx, env, p_history_t)
 
                 if (i + 1) % args.save_every == 0:
                     checkpoint_path = run_dir / f"checkpoint{((i + 1) // args.save_every - 1):04d}.pth"

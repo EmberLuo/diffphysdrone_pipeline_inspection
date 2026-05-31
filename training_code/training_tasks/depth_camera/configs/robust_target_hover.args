@@ -53,9 +53,9 @@ mixed
 0.85
 --use_wind_curriculum
 --wind_curriculum_start
-0.0
+0.3
 --wind_curriculum_end
-0.6
+0.9
 --wind_curriculum_min_scale
 0.0
 --wind_curriculum_max_scale

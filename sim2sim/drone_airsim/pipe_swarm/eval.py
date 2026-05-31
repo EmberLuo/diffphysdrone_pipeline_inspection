@@ -78,6 +78,7 @@ from wind_utils import (
     wind_config_from_args,
     wind_sample_to_record,
 )
+from pipe_scene import setup_pipe_scene
 
 def quaternion_to_matrix(quaternions: torch.Tensor) -> torch.Tensor:
     """
@@ -164,6 +165,12 @@ wind_trace_jsonl_fp = None
 client = airsim.MultirotorClient()
 client.confirmConnection()
 client.reset()
+pipe_scene_result = setup_pipe_scene(client, log_dir)
+print(
+    "pipe scene ready: "
+    f"removed {len(pipe_scene_result['removed_wall_objects'])} wall objects, "
+    f"spawned {len(pipe_scene_result['pipes'])} pipes"
+)
 
 device = torch.device('cuda')
 model = Model(7 if args.no_odom else 10, 6).eval().to(device)
@@ -444,12 +451,14 @@ if __name__ == '__main__':
     script_dir = os.path.dirname(os.path.abspath(__file__))
     shutil.copy(__file__, f"{log_dir}/eval.py")
     shutil.copy(os.path.join(script_dir, "wind_utils.py"), f"{log_dir}/wind_utils.py")
+    shutil.copy(os.path.join(script_dir, "pipe_scene.py"), f"{log_dir}/pipe_scene.py")
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    screen_capture_display = os.environ.get("DISPLAY", ":0")
     ffmpeg_p = subprocess.Popen([
         '/usr/bin/ffmpeg',
         '-f', 'x11grab',
         '-video_size', '896x504',
-        '-i', ':0+512,340',
+        '-i', f'{screen_capture_display}+512,340',
         '-c:v', 'h264_nvenc',
         '-vf', f'setpts={args.clockspeed}*PTS',
         '-loglevel', 'error',
