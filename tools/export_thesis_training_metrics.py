@@ -8,7 +8,16 @@ import csv
 import json
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
+
+try:
+    from thesis_plot_style import setup_chinese_matplotlib
+except ImportError:  # pragma: no cover
+    from tools.thesis_plot_style import setup_chinese_matplotlib
 
 try:
     from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
@@ -22,6 +31,12 @@ DEFAULT_RUNS = {
     "DOB+RTH": "training_code/logs/depth_camera/single_agent_odom/20260504_122043_dob_hover_dp_depth_odom",
 }
 
+RUN_LABELS = {
+    "Original loss": "原始损失",
+    "RTH/dynamic safety": "RTH/动态安全",
+    "DOB+RTH": "DOB+RTH",
+}
+
 TAGS = [
     "success/safety",
     "success/goal",
@@ -32,6 +47,13 @@ TAGS = [
     "safety/min_obstacle_distance",
     "control/saturation_ratio",
 ]
+
+
+setup_chinese_matplotlib()
+
+
+def display_run_name(name: str) -> str:
+    return RUN_LABELS.get(name, name)
 
 
 def load_scalars(run_dir: Path) -> dict[str, list[tuple[int, float]]]:
@@ -81,7 +103,7 @@ def write_ablation_csv(output_dir: Path, runs, all_scalars):
             writer.writerow(row)
 
 
-def plot_tag(output_path: Path, all_scalars, tag_groups):
+def plot_tag(output_path: Path, all_scalars, tag_groups, title: str, ylabel: str):
     fig, ax = plt.subplots(figsize=(7.2, 4.2), dpi=180)
     for run, tag, label in tag_groups:
         values = all_scalars.get(run, {}).get(tag, [])
@@ -91,7 +113,9 @@ def plot_tag(output_path: Path, all_scalars, tag_groups):
         ys = [value for _, value in values]
         ax.plot(xs, ys, label=label)
     ax.grid(True, alpha=0.3)
-    ax.set_xlabel("training step")
+    ax.set_title(title)
+    ax.set_xlabel("训练步数")
+    ax.set_ylabel(ylabel)
     ax.legend()
     fig.tight_layout()
     fig.savefig(output_path)
@@ -148,22 +172,28 @@ def main():
         figures_dir / "training_depth_success.png",
         all_scalars,
         [
-            (name, "success/safety", f"{name} safety") for name in runs
+            (name, "success/safety", f"{display_run_name(name)}-安全") for name in runs
         ]
-        + [(name, "success/goal", f"{name} goal") for name in runs]
-        + [(name, "success/hover", f"{name} hover") for name in runs],
+        + [(name, "success/goal", f"{display_run_name(name)}-目标") for name in runs]
+        + [(name, "success/hover", f"{display_run_name(name)}-悬停") for name in runs],
+        "训练成功率曲线",
+        "成功率",
     )
     plot_tag(
         figures_dir / "training_depth_errors.png",
         all_scalars,
-        [(name, "goal/final_error", f"{name} final goal") for name in runs]
-        + [(name, "hover/position_error", f"{name} hover pos") for name in runs],
+        [(name, "goal/final_error", f"{display_run_name(name)}-最终目标误差") for name in runs]
+        + [(name, "hover/position_error", f"{display_run_name(name)}-悬停位置误差") for name in runs],
+        "训练误差曲线",
+        "误差 / m",
     )
     plot_tag(
         figures_dir / "training_depth_safety.png",
         all_scalars,
-        [(name, "safety/min_obstacle_distance", f"{name} min dist") for name in runs]
-        + [(name, "control/saturation_ratio", f"{name} saturation") for name in runs],
+        [(name, "safety/min_obstacle_distance", f"{display_run_name(name)}-最小障碍距离") for name in runs]
+        + [(name, "control/saturation_ratio", f"{display_run_name(name)}-控制饱和率") for name in runs],
+        "安全距离与控制饱和率",
+        "指标值",
     )
 
     print(f"Wrote {output_dir}")
