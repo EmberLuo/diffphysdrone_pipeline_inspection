@@ -445,11 +445,12 @@ if __name__ == '__main__':
     shutil.copy(__file__, f"{log_dir}/eval.py")
     shutil.copy(os.path.join(script_dir, "wind_utils.py"), f"{log_dir}/wind_utils.py")
     # os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+    screen_capture_display = os.environ.get("DISPLAY", ":0")
     ffmpeg_p = subprocess.Popen([
         '/usr/bin/ffmpeg',
         '-f', 'x11grab',
         '-video_size', '896x504',
-        '-i', ':0+512,340',
+        '-i', f'{screen_capture_display}+512,340',
         '-c:v', 'h264_nvenc',
         '-vf', f'setpts={args.clockspeed}*PTS',
         '-loglevel', 'error',
