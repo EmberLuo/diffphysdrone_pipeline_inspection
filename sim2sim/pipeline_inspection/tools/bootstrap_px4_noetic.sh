@@ -50,6 +50,10 @@ import sys
 path = pathlib.Path(sys.argv[1])
 text = path.read_text()
 text = text.replace("<ros_topic>/livox/lidar</ros_topic>", "<ros_topic>/livox/lidar2</ros_topic>")
+text = text.replace(
+    "<csv_file_name>/home/ember/GitHub/diffphysdrone_pipeline_inspection/sim2sim/pipeline_inspection/sim/models/Mid360/scan_mode/mid360-real-centr.csv</csv_file_name>",
+    "<csv_file_name>/workspace/sim2sim/pipeline_inspection/sim/models/Mid360/scan_mode/mid360-real-centr.csv</csv_file_name>",
+)
 path.write_text(text)
 PY
 

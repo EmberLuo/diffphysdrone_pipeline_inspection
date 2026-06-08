@@ -1,5 +1,6 @@
 <launch>
   <arg name="repo_root" default="$(env REPO_ROOT)"/>
+  <arg name="world" default="$(arg repo_root)/sim/worlds/pipe_factory_local.world"/>
   <arg name="start_px4" default="true"/>
   <arg name="start_livox_bridge" default="true"/>
   <arg name="rviz" default="false"/>
@@ -10,7 +11,7 @@
 
   <include file="$(find navigation_bringup)/launch/point_lio_mapping.launch">
     <arg name="repo_root" value="$(arg repo_root)"/>
-    <arg name="world" value="$(arg repo_root)/sim/worlds/pipe_factory_local.world"/>
+    <arg name="world" value="$(arg world)"/>
     <arg name="start_px4" value="$(arg start_px4)"/>
     <arg name="vehicle" value="$(arg vehicle)"/>
     <arg name="sdf" value="$(arg sdf)"/>

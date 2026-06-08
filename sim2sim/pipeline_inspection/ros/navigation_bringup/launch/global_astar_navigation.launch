@@ -17,6 +17,8 @@
   <arg name="net_weight" default="$(arg repo_root)/../../training_code/logs/depth_camera/single_agent_odom/20260504_122043_dob_hover_dp_depth_odom/checkpoint0004.pth"/>
   <arg name="publish_to_px4" default="true"/>
   <arg name="controller_debug" default="false"/>
+  <arg name="hover_percent" default="0.25"/>
+  <arg name="max_hover_percent" default="0.65"/>
   <arg name="use_localization_mode_manager" default="false"/>
   <arg name="gnss_odom_topic" default="/gnss/odom"/>
   <arg name="gnss_mode_topic" default="/gnss/mode"/>
@@ -78,5 +80,7 @@
     <arg name="target_topic" value="/e2e/local_target"/>
     <arg name="target_speed" value="$(arg target_speed)"/>
     <arg name="debug" value="$(arg controller_debug)"/>
+    <arg name="hover_percent" value="$(arg hover_percent)"/>
+    <arg name="max_hover_percent" value="$(arg max_hover_percent)"/>
   </include>
 </launch>

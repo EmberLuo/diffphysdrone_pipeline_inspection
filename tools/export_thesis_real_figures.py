@@ -165,6 +165,60 @@ def setup_3d_axis(
         pass
 
 
+def sparse_voxel_mask(points: np.ndarray, res: float = 0.35, max_count: int = 1) -> np.ndarray:
+    mins = points.min(axis=0) - res
+    keys = np.floor((points - mins) / res).astype(np.int64)
+    _, inverse, counts = np.unique(keys, axis=0, return_inverse=True, return_counts=True)
+    return counts[inverse] <= max_count
+
+
+def plot_raw_cloud_stage(
+    points: np.ndarray,
+    out: Path,
+    title: str = "原始PCD采样点云",
+    max_points: int = 34000,
+    seed: int = 5,
+) -> None:
+    if len(points) <= max_points:
+        idx = np.arange(len(points))
+    else:
+        rng = np.random.default_rng(seed)
+        idx = np.sort(rng.choice(len(points), size=max_points, replace=False))
+    pts = points[idx]
+    sparse = sparse_voxel_mask(points)[idx]
+    dense = pts[~sparse]
+    isolated = pts[sparse]
+    fig = plt.figure(figsize=(7.2, 5.2))
+    ax = fig.add_subplot(111, projection="3d")
+    ax.scatter(
+        dense[:, 0],
+        dense[:, 1],
+        dense[:, 2],
+        s=1.2,
+        c="#58606f",
+        alpha=0.32,
+        linewidths=0,
+        depthshade=False,
+        label="原始密集采样",
+    )
+    if len(isolated):
+        ax.scatter(
+            isolated[:, 0],
+            isolated[:, 1],
+            isolated[:, 2],
+            s=3.0,
+            c="#d62728",
+            alpha=0.72,
+            linewidths=0,
+            depthshade=False,
+            label="低支撑离散点",
+        )
+    ax.set_title(title)
+    setup_3d_axis(ax, points)
+    ax.legend(loc="upper right", frameon=True, fontsize=8)
+    savefig(fig, out)
+
+
 def plot_cloud_overview(
     points: np.ndarray,
     out: Path,
@@ -202,6 +256,44 @@ def plot_cloud_overview(
     savefig(fig, out)
 
 
+def plot_filtered_cloud_comparison(raw: np.ndarray, filtered: np.ndarray, out: Path) -> None:
+    raw_pts = downsample(raw, max_points=28000, seed=17)
+    filtered_pts = downsample(filtered, max_points=12000, seed=19)
+    fig = plt.figure(figsize=(8.6, 4.8))
+    ax_raw = fig.add_subplot(121, projection="3d")
+    ax_filtered = fig.add_subplot(122, projection="3d")
+
+    ax_raw.scatter(
+        raw_pts[:, 0],
+        raw_pts[:, 1],
+        raw_pts[:, 2],
+        s=1.0,
+        c="#7b8794",
+        alpha=0.30,
+        linewidths=0,
+        depthshade=False,
+    )
+    ax_raw.set_title(f"滤波前：{len(raw):,}点")
+    setup_3d_axis(ax_raw, raw)
+
+    sc = ax_filtered.scatter(
+        filtered_pts[:, 0],
+        filtered_pts[:, 1],
+        filtered_pts[:, 2],
+        c=filtered_pts[:, 2],
+        s=2.2,
+        cmap="viridis",
+        alpha=0.86,
+        linewidths=0,
+        depthshade=False,
+    )
+    ax_filtered.set_title(f"滤波后：{len(filtered):,}点")
+    setup_3d_axis(ax_filtered, raw)
+    fig.suptitle("点云滤波与降采样结果对比", y=0.98)
+    fig.colorbar(sc, ax=ax_filtered, shrink=0.62, pad=0.08, label="高度 / m")
+    savefig(fig, out)
+
+
 def plot_cloud_topdown(points: np.ndarray, out: Path, title: str, color: str) -> None:
     pts = downsample(points)
     fig, ax = plt.subplots(figsize=(7.2, 4.8))
@@ -229,6 +321,44 @@ def occupancy_voxel_centers(points: np.ndarray, res: float = 0.25) -> np.ndarray
     keys = np.floor((points - mins) / res).astype(np.int64)
     occupied = np.unique(keys, axis=0)
     return mins + (occupied.astype(float) + 0.5) * res
+
+
+def voxel_keys(points: np.ndarray, res: float, padding: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
+    mins = points.min(axis=0) - padding
+    keys = np.floor((points - mins) / res).astype(np.int64)
+    return np.unique(keys, axis=0), mins
+
+
+def centers_from_keys(keys: np.ndarray, mins: np.ndarray, res: float) -> np.ndarray:
+    return mins + (keys.astype(float) + 0.5) * res
+
+
+def rows_to_void(keys: np.ndarray) -> np.ndarray:
+    contiguous = np.ascontiguousarray(keys)
+    return contiguous.view(np.dtype((np.void, contiguous.dtype.itemsize * contiguous.shape[1]))).ravel()
+
+
+def inflated_voxel_sets(points: np.ndarray, res: float, radius: float) -> tuple[np.ndarray, np.ndarray]:
+    occupied, mins = voxel_keys(points, res=res, padding=res)
+    cells = int(math.ceil(radius / res))
+    offsets = np.asarray(
+        [
+            (dx, dy, dz)
+            for dx in range(-cells, cells + 1)
+            for dy in range(-cells, cells + 1)
+            for dz in range(-cells, cells + 1)
+            if (dx * res) ** 2 + (dy * res) ** 2 + (dz * res) ** 2 <= radius**2
+        ],
+        dtype=np.int64,
+    )
+    inflated = np.unique((occupied[:, None, :] + offsets[None, :, :]).reshape(-1, 3), axis=0)
+    occ_void = rows_to_void(occupied)
+    inflated_void = rows_to_void(inflated)
+    shell = inflated[~np.isin(inflated_void, occ_void)]
+    occupied_centers = centers_from_keys(occupied, mins, res)
+    shell_centers = centers_from_keys(shell, mins, res)
+    valid_shell = (shell_centers[:, 2] >= 0.0) & (shell_centers[:, 2] <= DEFAULT_Z_LIMIT_M)
+    return occupied_centers, shell_centers[valid_shell]
 
 
 def inflate_occupancy(occ: np.ndarray, res: float, radius: float) -> np.ndarray:
@@ -399,24 +529,56 @@ def local_target_samples_from_path(path: np.ndarray, odom_step: float = 0.8, loo
 
 
 def plot_occupancy(points: np.ndarray, out: Path) -> None:
-    voxel_centers = occupancy_voxel_centers(points)
-    voxels = downsample(voxel_centers, max_points=DEFAULT_OCCUPANCY_MAX_POINTS, seed=13)
-    fig = plt.figure(figsize=(7.2, 5.2))
-    ax = fig.add_subplot(111, projection="3d")
-    sc = ax.scatter(
-        voxels[:, 0],
-        voxels[:, 1],
-        voxels[:, 2],
-        c=voxels[:, 2],
-        s=2.2,
-        cmap="viridis",
+    occupied, inflated_shell = inflated_voxel_sets(points, res=0.45, radius=0.75)
+    occupied_plot = downsample(occupied, max_points=9000, seed=13)
+    shell_plot = downsample(inflated_shell, max_points=14000, seed=29)
+    fig = plt.figure(figsize=(8.6, 4.8))
+    ax_occ = fig.add_subplot(121, projection="3d")
+    ax_inflated = fig.add_subplot(122, projection="3d")
+
+    ax_occ.scatter(
+        occupied_plot[:, 0],
+        occupied_plot[:, 1],
+        occupied_plot[:, 2],
+        c="#1f4e79",
+        s=7.0,
+        marker="s",
         alpha=0.82,
         linewidths=0,
         depthshade=False,
+        label="原始占据体素",
     )
-    ax.set_title("三维占据体素地图")
-    setup_3d_axis(ax, voxel_centers)
-    fig.colorbar(sc, ax=ax, shrink=0.65, pad=0.08, label="高度 / m")
+    ax_occ.set_title("占据体素")
+    setup_3d_axis(ax_occ, occupied)
+
+    ax_inflated.scatter(
+        shell_plot[:, 0],
+        shell_plot[:, 1],
+        shell_plot[:, 2],
+        c="#f28e2b",
+        s=7.5,
+        marker="s",
+        alpha=0.16,
+        linewidths=0,
+        depthshade=False,
+        label="膨胀后安全禁入体素",
+    )
+    ax_inflated.scatter(
+        occupied_plot[:, 0],
+        occupied_plot[:, 1],
+        occupied_plot[:, 2],
+        c="#1f4e79",
+        s=7.0,
+        marker="s",
+        alpha=0.88,
+        linewidths=0,
+        depthshade=False,
+        label="原始占据体素",
+    )
+    ax_inflated.set_title("膨胀后的搜索禁入空间")
+    setup_3d_axis(ax_inflated, occupied)
+    ax_inflated.legend(loc="upper right", frameon=True, fontsize=8)
+    fig.suptitle("三维占据体素与障碍物膨胀", y=0.98)
     savefig(fig, out)
 
 
@@ -595,7 +757,7 @@ def plot_hover_boxplot(repo: Path, out: Path) -> None:
         return
 
     fig, ax = plt.subplots(figsize=(6.8, 4.4))
-    ax.boxplot([v for _, v in groups], tick_labels=[k for k, _ in groups], patch_artist=True)
+    ax.boxplot([v for _, v in groups], labels=[k for k, _ in groups], patch_artist=True)
     ax.set_ylabel("位置误差 / m")
     ax.set_title("轨迹日志中的悬停/终端位置误差")
     ax.grid(True, axis="y", color="#d9d9d9", linewidth=0.6, alpha=0.8)
@@ -658,7 +820,25 @@ def main() -> None:
     pointlio_map_pcd = (repo / args.pointlio_map_pcd).resolve()
     capture_dir = (repo / args.ros_capture_dir).resolve()
 
+    raw = load_pcd_xyz(raw_pcd) if raw_pcd.exists() else None
     filtered = load_pcd_xyz(filtered_pcd)
+    if raw is not None:
+        plot_raw_cloud_stage(
+            raw,
+            figures / "ch2_raw_point_cloud_real.png",
+            "原始PCD采样点云",
+            max_points=34000,
+            seed=5,
+        )
+    else:
+        plot_raw_cloud_stage(
+            filtered,
+            figures / "ch2_raw_point_cloud_real.png",
+            "原始PCD采样点云",
+            max_points=22000,
+            seed=5,
+        )
+
     plot_cloud_overview(
         filtered,
         figures / "ch2_point_cloud_mapping_real.png",
@@ -666,13 +846,16 @@ def main() -> None:
         max_points=20000,
         seed=3,
     )
-    plot_cloud_overview(
-        filtered,
-        figures / "ch2_filtered_point_cloud_real.png",
-        "滤波后点云地图",
-        max_points=12000,
-        seed=11,
-    )
+    if raw is not None:
+        plot_filtered_cloud_comparison(raw, filtered, figures / "ch2_filtered_point_cloud_real.png")
+    else:
+        plot_cloud_overview(
+            filtered,
+            figures / "ch2_filtered_point_cloud_real.png",
+            "滤波后点云地图",
+            max_points=12000,
+            seed=11,
+        )
     pointlio_map = load_pcd_xyz(pointlio_map_pcd) if pointlio_map_pcd.exists() else filtered
     plot_cloud_overview(
         pointlio_map,
@@ -682,16 +865,6 @@ def main() -> None:
         ylim=(-30.0, 30.0),
     )
     plot_occupancy(filtered, figures / "ch2_occupancy_grid_real.png")
-
-    if raw_pcd.exists():
-        raw = load_pcd_xyz(raw_pcd)
-        plot_cloud_overview(
-            raw,
-            figures / "ch2_raw_point_cloud_real.png",
-            "原始采样点云地图",
-            max_points=28000,
-            seed=5,
-        )
 
     path_rows = load_csv(capture_dir / "global_path_points.csv")
     if path_rows:

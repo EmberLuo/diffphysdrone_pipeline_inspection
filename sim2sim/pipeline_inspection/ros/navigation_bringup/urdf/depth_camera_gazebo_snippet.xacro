@@ -1,15 +1,20 @@
 <!--
-  Add this snippet to the PX4 iris_mid360 SDF/Xacro model under the base_link.
+  Add this native SDF snippet to the PX4 iris_mid360 model under <model>.
   It publishes a forward depth image on /e2e/depth/image_raw via gazebo_ros_openni_kinect.
 -->
 <link name="e2e_depth_camera_link">
   <pose>0.12 0 0.04 0 0 0</pose>
-</link>
-<joint name="e2e_depth_camera_joint" type="fixed">
-  <parent>base_link</parent>
-  <child>e2e_depth_camera_link</child>
-</joint>
-<gazebo reference="e2e_depth_camera_link">
+  <inertial>
+    <mass>0.02</mass>
+    <inertia>
+      <ixx>1e-5</ixx>
+      <iyy>1e-5</iyy>
+      <izz>1e-5</izz>
+      <ixy>0</ixy>
+      <ixz>0</ixz>
+      <iyz>0</iyz>
+    </inertia>
+  </inertial>
   <sensor type="depth" name="e2e_depth_camera">
     <always_on>true</always_on>
     <update_rate>30</update_rate>
@@ -26,6 +31,7 @@
       </clip>
     </camera>
     <plugin name="e2e_depth_camera_controller" filename="libgazebo_ros_openni_kinect.so">
+      <robotNamespace>/</robotNamespace>
       <cameraName>e2e</cameraName>
       <alwaysOn>true</alwaysOn>
       <updateRate>30</updateRate>
@@ -39,4 +45,8 @@
       <pointCloudCutoffMax>24.0</pointCloudCutoffMax>
     </plugin>
   </sensor>
-</gazebo>
+</link>
+<joint name="e2e_depth_camera_joint" type="fixed">
+  <parent>iris::base_link</parent>
+  <child>e2e_depth_camera_link</child>
+</joint>
