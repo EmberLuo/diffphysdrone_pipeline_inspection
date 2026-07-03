@@ -36,6 +36,12 @@ def _add_lidar_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--lidar_vbeams", type=int, default=6)
     parser.add_argument("--lidar_vfov_min", type=float, default=-10.0)
     parser.add_argument("--lidar_vfov_max", type=float, default=20.0)
+    # Sensor domain randomization: per-env range-noise std (m) and per-beam
+    # dropout probability, each sampled uniformly from [min, max] at reset.
+    parser.add_argument("--lidar_noise_std_min", type=float, default=0.0)
+    parser.add_argument("--lidar_noise_std_max", type=float, default=0.0)
+    parser.add_argument("--lidar_dropout_min", type=float, default=0.0)
+    parser.add_argument("--lidar_dropout_max", type=float, default=0.0)
 
 
 def _build_fusion_env(args: argparse.Namespace, device: torch.device):
@@ -49,12 +55,23 @@ def _build_fusion_env(args: argparse.Namespace, device: torch.device):
         lidar_hbeams=args.lidar_hbeams,
         lidar_vbeams=args.lidar_vbeams,
         lidar_vfov=(args.lidar_vfov_min, args.lidar_vfov_max),
+        lidar_noise_std_range=(args.lidar_noise_std_min, args.lidar_noise_std_max),
+        lidar_dropout_range=(args.lidar_dropout_min, args.lidar_dropout_max),
     )
 
 
 def _build_fusion_model(args: argparse.Namespace, device: torch.device) -> LidarDepthFusionModel:
     state_dim = 7 if args.no_odom else 10
-    return LidarDepthFusionModel(state_dim, 6).to(device)
+    model = LidarDepthFusionModel(state_dim, 6).to(device)
+    # lidar_stem uses LazyLinear, whose parameters are only created on the first
+    # forward. Materialize them here (before the optimizer is built) with a dummy
+    # pass sized to the configured lidar (hbeams, vbeams) and pooled depth map.
+    with torch.no_grad():
+        dummy_depth = torch.zeros(1, 1, 12, 16, device=device)
+        dummy_lidar = torch.zeros(1, 1, args.lidar_hbeams, args.lidar_vbeams, device=device)
+        dummy_state = torch.zeros(1, state_dim, device=device)
+        model((dummy_depth, dummy_lidar), dummy_state)
+    return model
 
 
 def _make_fusion_observation(env, args: argparse.Namespace, ctl_dt: float):

@@ -23,13 +23,35 @@ class Env(DepthEnv):
         lidar_hbeams: int = 120,
         lidar_vbeams: int = 6,
         lidar_vfov: tuple[float, float] = (-10.0, 20.0),
+        lidar_noise_std_range: tuple[float, float] = (0.0, 0.0),
+        lidar_dropout_range: tuple[float, float] = (0.0, 0.0),
         **kwargs,
     ) -> None:
         self.lidar_range = float(lidar_range)
         self.lidar_hbeams = int(lidar_hbeams)
         self.lidar_vbeams = int(lidar_vbeams)
         self.lidar_vfov = (float(lidar_vfov[0]), float(lidar_vfov[1]))
+        # Per-environment sensor domain randomization. Each env samples its own
+        # range-noise std (meters) and per-beam dropout probability at reset(),
+        # so the policy sees a spread of sensor qualities during training.
+        self.lidar_noise_std_range = (float(lidar_noise_std_range[0]), float(lidar_noise_std_range[1]))
+        self.lidar_dropout_range = (float(lidar_dropout_range[0]), float(lidar_dropout_range[1]))
+        self._lidar_noise_std: torch.Tensor | None = None
+        self._lidar_dropout_p: torch.Tensor | None = None
         super().__init__(*args, **kwargs)
+
+    def _sample_lidar_dr(self) -> None:
+        B = self.batch_size
+        self._lidar_noise_std = torch.empty(B, device=self.device, dtype=self.p.dtype).uniform_(
+            self.lidar_noise_std_range[0], self.lidar_noise_std_range[1]
+        )
+        self._lidar_dropout_p = torch.empty(B, device=self.device, dtype=self.p.dtype).uniform_(
+            self.lidar_dropout_range[0], self.lidar_dropout_range[1]
+        )
+
+    def reset(self):
+        super().reset()
+        self._sample_lidar_dr()
 
     def _lidar_frame(self) -> torch.Tensor:
         fwd = self.R[:, :, 0].clone()
@@ -61,5 +83,22 @@ class Env(DepthEnv):
             self.lidar_vfov[0],
             self.lidar_vfov[1],
         )
+
+        # A beam is a genuine return only if it struck geometry within range;
+        # no-hit beams come back at exactly lidar_range. Noise and dropout are
+        # applied to real returns only, never to phantom max-range readings.
+        hit = distances < (self.lidar_range - 1e-4)
+
+        if self._lidar_noise_std is not None and self.lidar_noise_std_range[1] > 0.0:
+            std = self._lidar_noise_std[:, None, None]
+            noisy = distances + torch.randn_like(distances) * std
+            distances = torch.where(hit, noisy, distances)
+
         scan = self.lidar_range - distances.clamp(0.0, self.lidar_range)
+
+        if self._lidar_dropout_p is not None and self.lidar_dropout_range[1] > 0.0:
+            p = self._lidar_dropout_p[:, None, None]
+            drop = (torch.rand_like(scan) < p) & hit
+            scan = scan.masked_fill(drop, 0.0)
+
         return scan.clamp_(0.0, self.lidar_range)[:, None]

@@ -13,7 +13,7 @@ class LidarNavRLModel(nn.Module):
             nn.Conv2d(16, 16, kernel_size=(5, 3), stride=(2, 2), padding=(2, 1)),
             nn.ELU(),
             nn.Flatten(),
-            nn.Linear(16 * 30 * 3, 192),
+            nn.LazyLinear(192),  # infers flatten dim from lidar (hbeams, vbeams)
             nn.LayerNorm(192),
         )
         self.v_proj = nn.Linear(dim_obs, 192)
